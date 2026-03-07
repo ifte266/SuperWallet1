@@ -8,15 +8,18 @@ app.post('/send', async (req, res) => {
     const { receiver, amount, method } = req.body;
     const message = `SuperWallet: ${amount} TK sent to ${receiver} via ${method}.`;
     
-    // তোমার নতুন লোকাল আইপি ও টোকেন
-    const token = '81e3a1b3-de7e-4fad-ae22-7eba08d2de21';
-    const gatewayUrl = 'http://192.168.16.110:8082/'; // স্ক্রিনশট অনুযায়ী নতুন আইপি
+    // তোমার Cloud Token (স্ক্রিনশট ২৩৩১৪১ অনুযায়ী)
+    const cloudToken = 'fQVi8OwFSUGIN6j8YKE...'; // পুরো বড় টোকেনটি এখানে বসাবে
 
     try {
-        await axios.get(`${gatewayUrl}?to=${receiver}&message=${encodeURIComponent(message)}&token=${token}`);
-        res.json({ message: "সফল! তোমার ফোন থেকে মেসেজ পাঠানো হচ্ছে।" });
+        await axios.post('https://www.traccar.org/sms/', {
+            to: receiver,
+            message: message,
+            token: cloudToken
+        });
+        res.json({ message: "সফল! ক্লাউড সার্ভারের মাধ্যমে মেসেজ পাঠানো হচ্ছে।" });
     } catch (error) {
-        res.json({ message: "সার্ভার কাজ করছে না। নিশ্চিত করো ফোন ও পিসি একই ওয়াইফাই-তে আছে।" });
+        res.json({ message: "মেসেজ পাঠাতে সমস্যা হয়েছে। ক্লাউড টোকেন চেক করো।" });
     }
 });
 
