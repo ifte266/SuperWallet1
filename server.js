@@ -8,8 +8,8 @@ app.post('/send', async (req, res) => {
     const { receiver, amount, method } = req.body;
     const message = `SuperWallet: ${amount} TK sent to ${receiver} via ${method}.`;
     
-    // তোমার Cloud Token (স্ক্রিনশট ২৩৩১৪১ অনুযায়ী)
-    const cloudToken = 'fQVi8OwFSUGIN6j8YKE...'; // পুরো বড় টোকেনটি এখানে বসাবে
+    // তোমার আসল ক্লাউড টোকেন (স্ক্রিনশট ২৩৩১৪১ অনুযায়ী)
+    const cloudToken = 'fQVi8OwFSUGIN6j8YKECG:APA91bGV0_4T8zN7I3-elr-eHKw8BTbYgxjTwuPHuERNvcOYLlQrmnNbdU154czCZKLo29accJkeukWxN4x2UIrKPY4DGsCSFFZni2sG2lERnllV91LZAN0';
 
     try {
         await axios.post('https://www.traccar.org/sms/', {
@@ -17,9 +17,9 @@ app.post('/send', async (req, res) => {
             message: message,
             token: cloudToken
         });
-        res.json({ message: "সফল! ক্লাউড সার্ভারের মাধ্যমে মেসেজ পাঠানো হচ্ছে।" });
+        res.json({ message: "সফল! মেসেজ পাঠানো হচ্ছে।" });
     } catch (error) {
-        res.json({ message: "মেসেজ পাঠাতে সমস্যা হয়েছে। ক্লাউড টোকেন চেক করো।" });
+        res.json({ message: "এরর! টোকেন বা ইন্টারনেট চেক করো।" });
     }
 });
 
