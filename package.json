@@ -4,43 +4,91 @@ const axios = require('axios');
 const cors = require('cors');
 
 const app = express();
-app.use(cors()); // এটি তোমার অ্যাপের কানেকশন সমস্যা সমাধান করবে
+
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// গোপন টোকেনটি এখন এনভায়রনমেন্ট ভেরিয়েবল থেকে আসবে
+// Environment Variables Validation
 const cloudToken = process.env.FIREBASE_TOKEN;
+const fcmServerKey = process.env.FCM_SERVER_KEY;
+const PORT = process.env.PORT || 3000;
 
+// Validate required environment variables
+if (!cloudToken || !fcmServerKey) {
+    console.error('Error: FIREBASE_TOKEN and FCM_SERVER_KEY must be set in .env file');
+    process.exit(1);
+}
+
+// POST endpoint to send money transfer notification
 app.post('/send', async (req, res) => {
     const { receiver, amount } = req.body;
 
-    // ইনপুট ভ্যালিডেশন
+    // Input Validation
     if (!receiver || !amount) {
-        return res.status(400).json({ error: 'Receiver and amount are required' });
+        return res.status(400).json({
+            success: false,
+            error: 'Receiver and amount are required'
+        });
+    }
+
+    // Validate amount is a positive number
+    if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({
+            success: false,
+            error: 'Amount must be a positive number'
+        });
     }
 
     try {
-        const response = await axios.post('https://fcm.googleapis.com/fcm/send', {
-            to: cloudToken,
-            data: {
-                title: 'New Money Transfer',
-                body: `You received ${amount} from ${receiver}`,
-                receiver: receiver,
-                amount: amount
+        const response = await axios.post(
+            'https://fcm.googleapis.com/fcm/send',
+            {
+                to: cloudToken,
+                notification: {
+                    title: 'নতুন টাকা ট্রান্সফার',
+                    body: `আপনি ${receiver} থেকে ${amount} টাকা পেয়েছেন`
+                },
+                data: {
+                    receiver: receiver,
+                    amount: amount.toString()
+                }
+            },
+            {
+                headers: {
+                    'Authorization': `key=${fcmServerKey}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 5000
             }
-        }, {
-            headers: {
-                'Authorization': `key=${process.env.FCM_SERVER_KEY}`, // সার্ভার কী-টিও নিরাপদ রাখা ভালো
-                'Content-Type': 'application/json'
-            }
-        });
+        );
 
-        res.json({ success: true, message: 'Message sent successfully!', data: response.data });
+        res.json({
+            success: true,
+            message: 'বার্তা সফলভাবে পাঠানো হয়েছে',
+            messageId: response.data.message_id
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to send message', error: error.message });
+        console.error('FCM Error:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'বার্তা পাঠাতে ব্যর্থ',
+            error: process.env.NODE_ENV === 'production' ? 'Server error' : error.message
+        });
     }
 });
 
-const PORT = process.env.PORT || 3000;
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
+
+// Start server
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`সার্ভার পোর্ট ${PORT}-এ চলছে`);
+});
+
+// Handle unhandled errors
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
 });
