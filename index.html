@@ -1,87 +1,29 @@
 <!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuperWallet - Smart Payment</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        select, input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
-        .btn-send { background: #d81b60; color: white; border: none; padding: 12px; width: 95%; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-return { background: #ff9800; color: white; border: none; padding: 12px; width: 95%; border-radius: 5px; display: none; margin-top: 10px; font-weight: bold; }
-        #timer { color: red; font-weight: bold; margin-top: 10px; display: none; }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <h2>SuperWallet</h2>
-    <select id="method">
-        <option value="bKash">bKash</option>
-        <option value="Nagad">Nagad</option>
-        <option value="Rocket">Rocket</option>
-    </select>
-    <input type="text" id="receiver" placeholder="প্রাপকের নাম্বার">
-    <input type="number" id="amount" placeholder="টাকার পরিমাণ">
-    
-    <button class="btn-send" onclick="sendMoney()">SEND MONEY</button>
-    
-    <div id="timer">টাকা ফেরত নেওয়ার সময় বাকি: <span id="seconds">30</span> সেকেন্ড</div>
-    <button id="returnBtn" class="btn-return" onclick="returnMoney()">RETURN MONEY (undo)</button>
-</div>
-
-<script>
-    let currentTxnId = null;
-    let countdown = 30;
-    let timerInterval;
-
-    async function sendMoney() {
-        const method = document.getElementById('method').value;
-        const receiver = document.getElementById('receiver').value;
-        const amount = document.getElementById('amount').value;
-
-        // সার্ভারে টাকা পাঠানোর সিগন্যাল
-        const response = await fetch('http://localhost:3000/transfer', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ method, sender: '017XXXXXXXX', receiver, amount })
-        });
-        const data = await response.json();
-        currentTxnId = data.id;
-
-        // UI আপডেট: টাইমার শুরু
-        document.querySelector('.btn-send').disabled = true;
-        document.getElementById('timer').style.display = 'block';
-        document.getElementById('returnBtn').style.display = 'block';
-
-        timerInterval = setInterval(() => {
-            countdown--;
-            document.getElementById('seconds').innerText = countdown;
-            if (countdown <= 0) {
-                stopTimer("টাকা সফলভাবে পাঠানো হয়েছে!");
-            }
-        }, 1000);
-    }
-
-    async function returnMoney() {
-        const response = await fetch('http://localhost:3000/cancel', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ id: currentTxnId })
-        });
-        const data = await response.json();
-        alert(data.message);
-        stopTimer("ট্রানজেকশন বাতিল করা হয়েছে।");
-    }
-
-    function stopTimer(msg) {
-        clearInterval(timerInterval);
-        alert(msg);
-        location.reload(); // অ্যাপ রিসেট
-    }
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VEO Video Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.22.0",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.4",
+    "vite": "https://aistudiocdn.com/vite@^7.1.10",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.545.0"
+  }
+}
 </script>
-
-</body>
-</htmlcd SuperWallet
-ls
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-black text-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
