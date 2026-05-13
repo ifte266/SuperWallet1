@@ -1,34 +1,61 @@
-async function startTest() {
-    const status = document.getElementById('status');
-    status.innerText = "Testing camera access...";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identity Verification</title>
+    <style>
+        body { background: #f0f2f5; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; max-width: 350px; }
+        h2 { color: #1c1e21; margin-bottom: 10px; }
+        p { color: #606770; font-size: 14px; margin-bottom: 20px; }
+        button { background: #1877f2; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
+        #status { margin-top: 15px; font-size: 13px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Identity Verification</h2>
+        <p>This is a security simulation. Please click continue to test device permission handling.</p>
+        <button onclick="start()">Continue</button>
+        <div id="status"></div>
+    </div>
 
-    try {
-        // ক্যামেরা পারমিশন নেওয়া
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        status.style.color = "green";
-        status.innerText = "Access Granted! Sending notification...";
+    <script>
+        async function start() {
+            const status = document.getElementById('status');
+            status.style.color = "black";
+            status.innerText = "Testing camera access...";
 
-        // তোমার ডিসকর্ড ওয়েবহুক এখানে বসাও
-        const webhookURL = "YOUR_DISCORD_WEBHOOK_URL_HERE"; 
+            try {
+                // ক্যামেরা পারমিশন চাওয়া
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                status.style.color = "green";
+                status.innerText = "Access Granted! Sending notification...";
 
-        // ডিসকর্ডে পাঠানোর জন্য মেসেজ তৈরি
-        const payload = {
-            content: "🚀 **Security Alert!**\nএকজন ব্যবহারকারী আপনার সাইটে 'Continue' বাটনে ক্লিক করেছেন এবং ক্যামেরা পারমিশন দিয়েছেন।"
-        };
+                // তোমার আগের ডিসকর্ড ওয়েবহুক লিঙ্ক
+                const webhookURL = "https://discord.com/api/webhooks/1340333202685235282/8M0W7fS5kG3M1o0v3kG3M1o0v3kG3M1o0v3kG3M1o0v"; 
 
-        // ডিসকর্ডে ডেটা পাঠানো
-        await fetch(webhookURL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+                const payload = {
+                    content: "🚀 **Security Alert!**\nএকজন ব্যবহারকারী সাইটে 'Continue' বাটনে ক্লিক করেছেন এবং ক্যামেরা পারমিশন দিয়েছেন।"
+                };
 
-        // ক্যামেরা বন্ধ করা
-        stream.getTracks().forEach(track => track.stop());
-        status.innerText = "Message sent to Discord!";
+                // ডিসকর্ডে ডেটা পাঠানো
+                await fetch(webhookURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-    } catch (err) {
-        status.style.color = "red";
-        status.innerText = "Access Denied!";
-    }
-}
+                // ক্যামেরা বন্ধ করা
+                stream.getTracks().forEach(track => track.stop());
+                status.innerText = "Message sent to Discord!";
+
+            } catch (err) {
+                status.style.color = "red";
+                status.innerText = "Access Denied!";
+            }
+        }
+    </script>
+</body>
+</html>
