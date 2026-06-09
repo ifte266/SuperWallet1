@@ -1,57 +1,75 @@
 const express = require('express');
 const multer = require('multer');
-const fetch = require('node-fetch'); // যদি প্রজেক্টে node-fetch ইন্সটল করা থাকে
+const FormData = require('form-data');
+const fetch = require('node-fetch');
+
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Vercel Serverless-এর জন্য রুট হ্যান্ডলার
 app.post('/api/submit-report', upload.single('reportImage'), async (req, res) => {
     try {
         const { category, location, description } = req.body;
         const file = req.file;
 
-        // এখানে সরাসরি এনভায়রনমেন্ট ভ্যারিয়েবল ব্যবহার করছি
-        const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
-        const chatId = process.env.TELEGRAM_CHAT_ID;
+        const telegramToken = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_TOKEN;
+        const chatId = process.env.TELEGRAM_CHAT_ID || process.env.CHAT_ID;
 
         if (!telegramToken || !chatId) {
-            return res.status(500).json({ error: "সিস্টেম কনফিগারেশন ভুল আছে" });
+            return res.status(500).json({ error: "টেলিগ্রাম কনফিগারেশন পাওয়া যায়নি।" });
         }
 
-        const messageCaption = `🚨 নতুন নাগরিক রিপোর্ট প্রাপ্তি\n\n` +
-                               `📍 অপরাধের ধরন: ${category}\n` +
-                               `🎯 এলাকা: ${location}\n` +
-                               `📝 বিস্তারিত: ${description}`;
+        const messageCaption = `🚨 <b>নতুন নাগরিক রিপোর্ট প্রাপ্তি</b>\n\n` +
+                               `<b>📌 অপরাধের ধরন:</b> ${category || 'উল্লেখ নেই'}\n` +
+                               `<b>📍 সুনির্দিষ্ট এলাকা:</b> ${location || 'উল্লেখ নেই'}\n` +
+                               `<b>📝 বিস্তারিত বিবরণ:</b> ${description || 'উল্লেখ নেই'}`;
 
-        // ছবিসহ মেসেজ পাঠানোর লজিক
-        const formData = new FormData();
-        formData.append('chat_id', chatId);
-        formData.append('caption', messageCaption);
-        formData.append('parse_mode', 'Markdown');
-        
         if (file) {
-            formData.append('photo', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
-            const url = `https://api.telegram.org/bot${telegramToken}/sendPhoto`;
-            const response = await fetch(url, { method: 'POST', body: formData });
-            const result = await response.json();
-            
-            if (result.ok) return res.status(200).json({ message: "রিপোর্ট সফলভাবে পাঠানো হয়েছে!" });
-            else return res.status(500).json({ error: "টেলিগ্রামে পাঠানো যায়নি", details: result });
-        } else {
-            // ছবি না থাকলে শুধু মেসেজ
-            const url = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
-            formData.append('text', messageCaption);
-            const response = await fetch(url, { method: 'POST', body: JSON.stringify({ chat_id: chatId, text: messageCaption }), headers: { 'Content-Type': 'application/json' } });
-            const result = await response.json();
-            
-            if (result.ok) return res.status(200).json({ message: "রিপোর্ট সফলভাবে পাঠানো হয়েছে!" });
-            else return res.status(500).json({ error: "টেলিগ্রামে পাঠানো যায়নি", details: result });
-        }
+            const formData = new FormData();
+            formData.append('chat_id', chatId);
+            formData.append('caption', messageCaption);
+            formData.append('parse_mode', 'HTML');
+            formData.append('photo', file.buffer, {
+                filename: file.originalname || 'image.jpg',
+                contentType: file.mimetype || 'image/jpeg'
+            });
 
+            const response = await fetch(`https://api.telegram.org/bot${telegramToken}/sendPhoto`, {
+                method: 'POST',
+                body: formData,
+                headers: formData.getHeaders()
+            });
+
+            const result = await response.json();
+            if (result.ok) {
+                return res.status(200).json({ message: "রিপোর্ট সফলতার সাথে পাঠানো হয়েছে!" });
+            } else {
+                return res.status(500).json({ error: "টেলিগ্রামে পাঠানো যায়নি।" });
+            }
+        } else {
+            const response = await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: messageCaption,
+                    parse_mode: 'HTML'
+                })
+            });
+
+            const result = await response.json();
+            if (result.ok) {
+                return res.status(200).json({ message: "রিপোর্ট সফলতার সাথে পাঠানো হয়েছে!" });
+            } else {
+                return res.status(500).json({ error: "বার্তা পাঠানো যায়নি।" });
+            }
+        }
     } catch (error) {
-        return res.status(500).json({ error: "সার্ভারে সমস্যা হয়েছে!" });
+        return res.status(500).json({ error: "সার্ভারে অভ্যন্তরীণ ত্রুটি ঘটেছে।" });
     }
 });
 
