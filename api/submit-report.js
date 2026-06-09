@@ -13,21 +13,21 @@ app.post('/api/submit-report', upload, async (req, res) => {
     const { category, location, description } = req.body;
     const file = req.file;
 
-    const telegramToken = process.env.TELEGRAM_TOKEN;
-    const chatId = process.env.CHAT_ID;
+    const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
 
     if (!telegramToken || !chatId) {
-      return res.status(500).json({ error: "সার্ভার কনফিগারেশনে সমস্যা রয়েছে।" });
+      return res.status(500).json({ error: 'সার্ভার কনফিগারেশনে সমস্যা রয়েছে' });
     }
 
     const formData = new FormData();
     formData.append('chat_id', chatId);
-    
-    const messageCaption = `🚨 *নতুন মাদকবিরোধী রিপোর্ট প্রাপ্তি* 🚨\n\n` +
-                           `📌 *অপরাধের ধরন:* ${category}\n` +
-                           `📍 *এলাকা/ঠিকানা:* ${location}\n` +
-                           `📝 *বিস্তারিত বিবরণ:* ${description}`;
-    
+
+    const messageCaption = `🚨 *নতুন সাইবার-নিরাপত্তা রিপোর্ট প্রাপ্তি* 🚨 \n\n` +
+      `📌 *অপরাধের ধরণ:* ${category}\n` +
+      `📍 *এলাকা/ঠিকানা:* ${location}\n` +
+      `📝 *বিস্তারিত বিবরণ:* ${description}`;
+
     formData.append('caption', messageCaption);
     formData.append('parse_mode', 'Markdown');
 
@@ -37,7 +37,7 @@ app.post('/api/submit-report', upload, async (req, res) => {
     }
 
     const telegramUrl = file 
-      ? `https://api.telegram.org/bot${telegramToken}/sendPhoto`
+      ? `https://api.telegram.org/bot${telegramToken}/sendPhoto` 
       : `https://api.telegram.org/bot${telegramToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(messageCaption)}&parse_mode=Markdown`;
 
     const response = await fetch(telegramUrl, {
@@ -46,14 +46,13 @@ app.post('/api/submit-report', upload, async (req, res) => {
     });
 
     if (response.ok) {
-      return res.status(200).json({ success: true, message: "রিপোর্টটি সফলভাবে এবং নিরাপদে পাঠানো হয়েছে।" });
+      return res.status(200).json({ success: true, message: 'রিপোর্টটি সফলভাবে সেন্ড হয়েছে!' });
     } else {
       const errData = await response.json();
-      return res.status(500).json({ error: "টেলিগ্রামে ডেটা পাঠানো যায়নি।", details: errData });
+      return res.status(500).json({ error: 'টেলিগ্রামে সেন্ড করতে ব্যর্থ', details: errData });
     }
-
   } catch (error) {
-    return res.status(500).json({ error: "অভ্যন্তরীণ সার্ভার ত্রুটি।" });
+    return res.status(500).json({ error: 'অভ্যন্তরীণ সার্ভার ত্রুটি' });
   }
 });
 
