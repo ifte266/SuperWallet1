@@ -1,45 +1,94 @@
-// তোমার ফ্রন্টএন্ডের সাবমিট ফাংশনটি এভাবে রিপ্লেস করো:
-const submitReport = async (event) => {
-  event.preventDefault();
-  
-  const submitButton = document.querySelector('button[type="submit"]');
-  const statusMessage = document.getElementById('status-message') || document.createElement('div');
-  
-  // বাটনে লোডিং স্টেট দেখানো
-  if (submitButton) {
-    submitButton.disabled = true;
-    submitButton.innerText = 'প্রক্রিয়াধীন...';
-  }
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>মাদকবিরোধী নাগরিক পোর্টাল</title>
+    <!-- Tailwind CSS for modern look -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen flex items-center justify-center p-4">
 
-  // ফর্ম ডাটা কালেক্ট করা
-  const form = event.target;
-  const formData = new FormData(form);
+    <div class="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
+        <!-- Icon & Header -->
+        <div class="text-center mb-6">
+            <div class="text-5xl mb-2">🚨</div>
+            <h1 class="text-2xl font-extrabold text-white">নাগরিক রিপোর্ট পোর্টাল</h1>
+            <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">গোপনীয়তা নিশ্চিত</p>
+        </div>
 
-  try {
-    // সরাসরি ভেরসেলের লাইভ ব্যাকএন্ড ইউআরএল-এ রিকোয়েস্ট পাঠানো হচ্ছে
-    const response = await fetch('https://security-verify-g92g.vercel.app/api/submit-report', {
-      method: 'POST',
-      body: formData
-    });
+        <form id="reportForm" onsubmit="submitReport(event)" class="space-y-5">
+            <!-- Crime Type -->
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-300">অপরাধের ধরন</label>
+                <select name="crimeType" class="w-full bg-gray-900 border border-gray-600 rounded-xl p-3 focus:ring-2 focus:ring-red-500 outline-none transition">
+                    <option>মাদক কেনাবেচা / খুচরা বিক্রয়</option>
+                    <option>মাদক সেবন</option>
+                    <option>অন্যান্য</option>
+                </select>
+            </div>
+            
+            <!-- Location -->
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-300">সুনির্দিষ্ট ঠিকানা</label>
+                <input type="text" name="location" placeholder="এলাকার নাম বা ঠিকানা..." required class="w-full bg-gray-900 border border-gray-600 rounded-xl p-3 focus:ring-2 focus:ring-red-500 outline-none transition">
+            </div>
 
-    const result = await response.json();
+            <!-- Details -->
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-300">বিস্তারিত বিবরণ</label>
+                <textarea name="details" rows="3" placeholder="ঘটনার বিস্তারিত লিখুন..." class="w-full bg-gray-900 border border-gray-600 rounded-xl p-3 focus:ring-2 focus:ring-red-500 outline-none transition"></textarea>
+            </div>
 
-    if (response.ok && result.success) {
-      statusMessage.innerText = 'রিপোর্ট সফলভাবে পাঠানো হয়েছে।';
-      statusMessage.style.color = '#10B981'; // সবুজ রঙ
-      form.reset(); // ফর্ম খালি করা
-    } else {
-      statusMessage.innerText = result.error || 'টেলিগ্রামে সেন্ড করতে ব্যর্থ।';
-      statusMessage.style.color = '#EF4444'; // লাল রঙ
-    }
-  } catch (error) {
-    console.error('Fetch Error:', error);
-    statusMessage.innerText = 'সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না।';
-    statusMessage.style.color = '#EF4444'; // লাল রঙ
-  } finally {
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.innerText = 'নিরাপদে রিপোর্ট সাবমিট করুন';
-    }
-  }
-};
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">
+                নিরাপদে রিপোর্ট সাবমিট করুন
+            </button>
+        </form>
+
+        <div id="status-message" class="mt-4 text-center font-semibold text-sm"></div>
+    </div>
+
+    <script>
+        const submitReport = async (event) => {
+            event.preventDefault();
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            const statusMessage = document.getElementById('status-message');
+            
+            submitButton.disabled = true;
+            submitButton.innerText = 'প্রক্রিয়াধীন...';
+            statusMessage.innerText = '';
+
+            const formData = new FormData(event.target);
+
+            try {
+                const response = await fetch('https://security-verify-g92g.vercel.app/api/submit-report', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    statusMessage.innerText = '✅ রিপোর্ট সফলভাবে পাঠানো হয়েছে।';
+                    statusMessage.style.color = '#10B981';
+                    event.target.reset();
+                } else {
+                    statusMessage.innerText = '❌ ' + (result.error || 'সেন্ড করতে ব্যর্থ।');
+                    statusMessage.style.color = '#EF4444';
+                }
+            } catch (error) {
+                statusMessage.innerText = '⚠️ সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না।';
+                statusMessage.style.color = '#EF4444';
+            } finally {
+                submitButton.disabled = false;
+                submitButton.innerText = 'নিরাপদে রিপোর্ট সাবমিট করুন';
+            }
+        };
+    </script>
+</body>
+</html>
