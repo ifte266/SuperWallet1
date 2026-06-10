@@ -1,137 +1,38 @@
-const express = require('express');
-const multer = require('multer');
-const FormData = require('form-data');
-const serverless = require('serverless-http');
+export default async function handler(req, res) {
+  // CORS সমস্যা সমাধানের জন্য হেডার
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-const app = express();
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
-// Multer Configuration
-const storage = multer.memoryStorage();
+  try {
+    const { crimeType, location, details } = req.body;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
 
-const upload = multer({
-storage,
-limits: {
-fileSize: 10 * 1024 * 1024 // 10MB
-}
-});
+    const message = `🚨 নতুন রিপোর্ট!\n\nধরণ: ${crimeType}\nএলাকা: ${location}\nবিস্তারিত: ${details}`;
 
-// HTML Escape Function
-function escapeHtml(text = '') {
-return String(text)
-.replace(/&/g, '&')
-.replace(/</g, '<')
-.replace(/>/g, '>');
-}
-
-// API Route
-app.post('/api/submit-report', upload.single('reportImage'), async (req, res) => {
-try {
-const { category, location, description } = req.body;
-const file = req.file;
-
-const telegramToken =
-  process.env.TELEGRAM_BOT_TOKEN ||
-  process.env.TELEGRAM_TOKEN;
-
-const chatId =
-  process.env.TELEGRAM_CHAT_ID ||
-  process.env.CHAT_ID;
-
-if (!telegramToken || !chatId) {
-  return res.status(500).json({
-    success: false,
-    error: 'Telegram configuration missing.'
-  });
-}
-
-const messageCaption = `
-
-🚨 <b>নতুন নাগরিক রিপোর্ট</b>
-
-<b>📌 অপরাধের ধরন:</b> ${escapeHtml(category || 'উল্লেখ নেই')}
-<b>📍 এলাকা:</b> ${escapeHtml(location || 'উল্লেখ নেই')}
-<b>📝 বিস্তারিত:</b> ${escapeHtml(description || 'উল্লেখ নেই')}
-`;
-
-let response;
-let result;
-
-if (file) {
-  const formData = new FormData();
-
-  formData.append('chat_id', chatId);
-  formData.append('caption', messageCaption);
-  formData.append('parse_mode', 'HTML');
-
-  formData.append('photo', file.buffer, {
-    filename: file.originalname || 'image.jpg',
-    contentType: file.mimetype || 'image/jpeg'
-  });
-
-  response = await fetch(
-    `https://api.telegram.org/bot${telegramToken}/sendPhoto`,
-    {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
-      body: formData,
-      headers: formData.getHeaders()
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: message })
+    });
+
+    const data = await response.json();
+
+    if (data.ok) {
+      return res.status(200).json({ success: true });
+    } else {
+      return res.status(500).json({ success: false, error: data.description });
     }
-  );
-
-  result = await response.json();
-} else {
-  response = await fetch(
-    `https://api.telegram.org/bot${telegramToken}/sendMessage`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: messageCaption,
-        parse_mode: 'HTML'
-      })
-    }
-  );
-
-  result = await response.json();
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Server error' });
+  }
 }
-
-if (!result.ok) {
-  console.error('Telegram Error:', result);
-
-  return res.status(500).json({
-    success: false,
-    error: result.description || 'Telegram API Error'
-  });
-}
-
-return res.status(200).json({
-  success: true,
-  message: 'রিপোর্ট সফলভাবে পাঠানো হয়েছে।'
-});
-
-} catch (error) {
-console.error('Server Error:', error);
-
-return res.status(500).json({
-  success: false,
-  error: 'সার্ভারে অভ্যন্তরীণ ত্রুটি ঘটেছে।'
-});
-
-}
-});
-
-// Health Check
-app.get('/', (req, res) => {
-res.status(200).json({
-success: true,
-message: 'Citizen Report API চলছে।'
-});
-});
-
-module.exports = serverless(app);
