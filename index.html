@@ -5,82 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Citizen Safety Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href='data:application/json,{"name":"Citizen Safety Tracker","short_name":"SafetyTracker","start_url":"./","display":"standalone","background_color":"#121212","theme_color":"#121212","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2991/2991148.png","sizes":"192x192","type":"image/png"}]}'>
+    <link rel="manifest" href='data:application/json,{"name":"Citizen Safety Tracker","short_name":"SafetyTracker","start_url":"./","display":"standalone","background_color":"#000000","theme_color":"#000000","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2991/2991148.png","sizes":"192x192","type":"image/png"}]}'>
 </head>
-<body class="bg-[#121212] text-white">
+<body class="bg-black text-white min-h-screen p-4">
 
-    <div id="installContainer" class="hidden p-4">
-        <button id="installBtn" class="w-full bg-green-600 py-4 rounded-xl font-bold text-lg shadow-lg">⬇️ Install App</button>
-    </div>
+    <div class="max-w-md mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Citizen Safety Tracker</h1>
+        
+        <div id="installContainer" class="hidden mb-6">
+            <button id="installBtn" class="w-full bg-green-600 py-3 rounded-lg font-bold">Install App to Home Screen</button>
+        </div>
 
-    <div class="p-5">
-        <h1 class="text-xl font-bold mb-4">Citizen Safety Tracker</h1>
-        <div class="bg-gray-900 p-6 rounded-2xl">
-            <form id="reportForm" class="space-y-4">
-                <select id="category" class="w-full bg-gray-800 p-3 rounded-lg">
-                    <option>Drug Activity</option>
-                    <option>Theft</option>
-                    <option>Other</option>
+        <div class="bg-[#1a1a1a] p-6 rounded-2xl shadow-xl">
+            <form id="reportForm" class="flex flex-col gap-4">
+                <select id="category" class="w-full bg-[#2a2a2a] p-4 rounded-lg text-white border border-gray-700 focus:outline-none">
+                    <option value="Drug Activity">Drug Activity</option>
+                    <option value="Theft">Theft/Robbery</option>
+                    <option value="Public Harassment">Public Harassment</option>
+                    <option value="Traffic Violation">Traffic Violation</option>
+                    <option value="Environmental Issue">Environmental Issue</option>
+                    <option value="Suspicious Activity">Suspicious Activity</option>
+                    <option value="Other">Other</option>
                 </select>
-                <button type="submit" class="w-full bg-blue-600 py-3 rounded-lg font-bold">Submit Report</button>
+                <button type="submit" class="w-full bg-blue-600 py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition">Submit Report</button>
             </form>
         </div>
     </div>
 
     <script type="module">
-        // PWA Install Logic
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installContainer').classList.remove('hidden');
-        });
-
-        document.getElementById('installBtn').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') document.getElementById('installContainer').classList.add('hidden');
-                deferredPrompt = null;
-            }
-        });
-
-        // Firebase Setup
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-
+        
         const firebaseConfig = {
             apiKey: "AIzaSyAGeR82VjAse0w3P-Bdd0uzrTGrq02ffXc",
             authDomain: "citizen-safety-tracker.firebaseapp.com",
             projectId: "citizen-safety-tracker",
             storageBucket: "citizen-safety-tracker.firebasestorage.app",
             messagingSenderId: "871704315412",
-            appId: "1:871704315412:web:b30edabcfc719abff1c901",
-            measurementId: "G-VB23WZ3WQV"
+            appId: "1:871704315412:web:b30edabcfc719abff1c901"
         };
         initializeApp(firebaseConfig);
-        getAnalytics();
 
-        // Telegram Logic
         const BOT_TOKEN = "8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg";
         const CHAT_ID = "8766925591";
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            document.getElementById('installContainer').classList.remove('hidden');
+            window.deferredPrompt = e;
+        });
+
+        document.getElementById('installBtn').addEventListener('click', () => {
+            if (window.deferredPrompt) {
+                window.deferredPrompt.prompt();
+                document.getElementById('installContainer').classList.add('hidden');
+            }
+        });
 
         document.getElementById('reportForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const cat = document.getElementById('category').value;
-            
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    const text = `🚨 Report: ${cat}%0A📍 Location: ${lat}, ${lon}%0A🔗 Map: https://maps.google.com/?q=${lat},${lon}`;
-                    
-                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}`);
-                    alert("Report Sent Successfully!");
-                }, () => {
-                    alert("Location access is required to send reports.");
-                });
-            }
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const text = `🚨 *Report: ${cat}*%0A📍 *Location:* ${pos.coords.latitude}, ${pos.coords.longitude}%0A🔗 *Map:* https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}&parse_mode=Markdown`);
+                alert("Report Sent Successfully!");
+            }, () => alert("Location permission is mandatory."));
         });
     </script>
 </body>
