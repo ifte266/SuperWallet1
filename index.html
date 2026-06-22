@@ -5,32 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Citizen Safety Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: white; font-family: sans-serif; }
+    </style>
+    <!-- Manifest link for PWA -->
+    <link rel="manifest" href='data:application/json,{"name":"Citizen Safety Tracker","short_name":"SafetyTracker","start_url":"./","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2991/2991148.png","sizes":"192x192","type":"image/png"}]}'>
 </head>
-<body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex flex-col items-center py-6 px-4">
+
+<!-- Install Button Container -->
+<div id="installContainer" class="hidden w-full max-w-md mb-4">
+    <button id="installBtn" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg">➕ অ্যাপটি ইন্সটল করুন</button>
+</div>
 
 <div class="w-full max-w-md bg-slate-900 border border-slate-700 p-8 rounded-3xl shadow-2xl">
     <h1 class="text-2xl font-bold text-center text-red-500 mb-6">🚨 নিরাপত্তা পোর্টাল</h1>
     
     <form id="reportForm" class="space-y-4">
-        <select id="category" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <select id="category" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700 focus:border-red-500 outline-none">
             <option>মাদক কেনাবেচা</option>
             <option>চুরি / ছিনতাই</option>
             <option>ইভটিজিং</option>
             <option>সন্দেহভাজন কার্যক্রম</option>
         </select>
         
-        <input type="text" id="location" placeholder="এলাকার নাম" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700">
-        <textarea id="details" placeholder="বিস্তারিত বিবরণ (ঐচ্ছিক)" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700"></textarea>
+        <input type="text" id="location" placeholder="এলাকার নাম" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700 outline-none focus:border-red-500">
+        <textarea id="details" placeholder="বিস্তারিত বিবরণ (ঐচ্ছিক)" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700 outline-none focus:border-red-500"></textarea>
         
         <input type="file" id="fileUpload" class="w-full p-2 bg-slate-800 rounded-xl border border-slate-700">
         
-        <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 py-4 rounded-xl font-bold transition">রিপোর্ট পাঠান</button>
+        <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 py-4 rounded-xl font-bold transition transform active:scale-95">রিপোর্ট পাঠান</button>
     </form>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    // PWA Install Logic
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('installContainer').classList.remove('hidden');
+    });
+
+    document.getElementById('installBtn').addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                document.getElementById('installContainer').classList.add('hidden');
+            }
+            deferredPrompt = null;
+        }
+    });
 
     const firebaseConfig = {
         apiKey: "AIzaSyAGeR82VjAse0w3P-Bdd0uzrTGrq02ffXc",
@@ -50,7 +79,7 @@
         btn.innerText = "পাঠানো হচ্ছে...";
         btn.disabled = true;
 
-        let fileUrl = "ছবি সংযুক্ত করা হয়নি";
+        let fileUrl = "ছবি নেই";
         const file = document.getElementById('fileUpload').files[0];
 
         try {
@@ -61,11 +90,15 @@
             }
 
             navigator.geolocation.getCurrentPosition(async (pos) => {
-                const text = `🚨 *নতুন রিপোর্ট*\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}\n*বিবরণ:* ${document.getElementById('details').value}\n*ছবি:* ${fileUrl}\n*লোকেশন:* ${pos.coords.latitude}, ${pos.coords.longitude}`;
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+                
+                const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}\n*বিবরণ:* ${document.getElementById('details').value}\n*ছবি:* ${fileUrl}\n*লোকেশন:* [দেখুন ম্যাপে](${mapLink})\n*কোঅর্ডিনেটস:* ${lat}, ${lon}`;
                 
                 await fetch(`https://api.telegram.org/bot8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg/sendMessage?chat_id=8766925591&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
                 
-                alert("আপনার রিপোর্টটি সফলভাবে পাঠানো হয়েছে!");
+                alert("রিপোর্ট সফলভাবে পাঠানো হয়েছে!");
                 location.reload();
             }, () => {
                 alert("দয়া করে লোকেশন পারমিশন অন করুন।");
