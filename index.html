@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Citizen Safety Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href='data:application/json,{"name":"Citizen Safety Tracker","short_name":"SafetyTracker","start_url":"./","display":"standalone","background_color":"#121212","theme_color":"#121212","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2991/2991148.png","sizes":"192x192","type":"image/png"}]}'>
 </head>
 <body class="bg-[#121212] text-white">
+
+    <div id="installContainer" class="hidden p-4">
+        <button id="installBtn" class="w-full bg-green-600 py-4 rounded-xl font-bold text-lg shadow-lg">⬇️ Install App</button>
+    </div>
 
     <div class="p-5">
         <h1 class="text-xl font-bold mb-4">Citizen Safety Tracker</h1>
@@ -17,13 +22,30 @@
                     <option>Theft</option>
                     <option>Other</option>
                 </select>
-                <input type="text" id="location" placeholder="Location" class="w-full bg-gray-800 p-3 rounded-lg">
                 <button type="submit" class="w-full bg-blue-600 py-3 rounded-lg font-bold">Submit Report</button>
             </form>
         </div>
     </div>
 
     <script type="module">
+        // PWA Install Logic
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installContainer').classList.remove('hidden');
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') document.getElementById('installContainer').classList.add('hidden');
+                deferredPrompt = null;
+            }
+        });
+
+        // Firebase Setup
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
@@ -39,25 +61,25 @@
         initializeApp(firebaseConfig);
         getAnalytics();
 
-        // তোমার বোটের তথ্যগুলো এখানে সেট করা আছে
+        // Telegram Logic
         const BOT_TOKEN = "8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg";
         const CHAT_ID = "8766925591";
 
-        document.getElementById('reportForm').addEventListener('submit', async (e) => {
+        document.getElementById('reportForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const cat = document.getElementById('category').value;
-            const loc = document.getElementById('location').value;
-            const text = `Report: ${cat}%0ALocation: ${loc}`;
             
-            try {
-                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}`);
-                if (response.ok) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    const text = `🚨 Report: ${cat}%0A📍 Location: ${lat}, ${lon}%0A🔗 Map: https://maps.google.com/?q=${lat},${lon}`;
+                    
+                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}`);
                     alert("Report Sent Successfully!");
-                } else {
-                    alert("Failed to send report.");
-                }
-            } catch (error) {
-                alert("Error: " + error.message);
+                }, () => {
+                    alert("Location access is required to send reports.");
+                });
             }
         });
     </script>
