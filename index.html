@@ -10,10 +10,12 @@
 </head>
 <body class="min-h-screen flex flex-col items-center py-6 px-4">
 
+<!-- ইন্সটল বাটন (এটি শুরুতে থাকবে, ব্রাউজার সাপোর্ট করলে দেখাবে) -->
 <div id="installContainer" class="hidden w-full max-w-sm mb-4">
     <button id="installBtn" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg transition">➕ অ্যাপটি হোম স্ক্রিনে যোগ করুন</button>
 </div>
 
+<!-- মূল ফর্ম -->
 <div class="w-full max-w-sm bg-slate-900 p-6 rounded-3xl border border-slate-700 shadow-2xl">
     <h1 class="text-xl font-bold text-center text-red-500 mb-6">🚨 নিরাপত্তা পোর্টাল</h1>
     <form id="reportForm" class="space-y-4">
@@ -29,7 +31,22 @@
     </form>
 </div>
 
+<!-- অ্যাপ পরিচিতি সেকশন (নিরাপত্তা ও বিশ্বাসযোগ্যতার জন্য) -->
+<div class="w-full max-w-sm mt-8 p-6 bg-slate-800 rounded-3xl border border-slate-700 text-slate-300 text-sm shadow-xl">
+    <h2 class="text-white font-bold mb-2">এই অ্যাপটি কী?</h2>
+    <p class="mb-4">এটি একটি পাবলিক নিরাপত্তা পোর্টাল। আপনার এলাকার যেকোনো অনাকাঙ্ক্ষিত ঘটনা বা অপরাধমূলক কর্মকাণ্ডের তথ্য সরাসরি কর্তৃপক্ষের কাছে পৌঁছে দেওয়ার জন্য এটি তৈরি করা হয়েছে।</p>
+    
+    <h2 class="text-white font-bold mb-2">আপনার নিরাপত্তা:</h2>
+    <ul class="list-disc ml-4 space-y-1">
+        <li>আপনার পাঠানো তথ্য গোপন রাখা হয়।</li>
+        <li>আপনার লোকেশন শুধুমাত্র ঘটনার সত্যতা যাচাইয়ের জন্য ব্যবহৃত হয়।</li>
+        <li>এটি কোনো ফিশিং বা স্ক্যাম সাইট নয়, এটি একটি সচেতনতামূলক প্রজেক্ট।</li>
+    </ul>
+    <p class="mt-4 text-xs italic text-center">সচেতন হোন, নিরাপদ থাকুন।</p>
+</div>
+
 <script>
+    // PWA ইন্সটলেশন লজিক
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -41,6 +58,7 @@
         if (deferredPrompt) deferredPrompt.prompt();
     });
 
+    // রিপোর্ট সাবমিট লজিক
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
