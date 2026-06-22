@@ -1,75 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Citizen Safety Tracker</title>
+    <title>সুরক্ষিত নাগরিক রিপোর্টিং পোর্টাল</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href='data:application/json,{"name":"Citizen Safety Tracker","short_name":"SafetyTracker","start_url":"./","display":"standalone","background_color":"#000000","theme_color":"#000000","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2991/2991148.png","sizes":"192x192","type":"image/png"}]}'>
+    <link rel="manifest" href='data:application/json,{"name":"Citizen Safety Tracker","short_name":"SafetyTracker","start_url":"./","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2991/2991148.png","sizes":"192x192","type":"image/png"}]}'>
 </head>
-<body class="bg-black text-white min-h-screen p-4">
+<body class="bg-slate-950 min-h-screen flex flex-col items-center py-6 px-4">
 
-    <div class="max-w-md mx-auto">
-        <h1 class="text-2xl font-bold mb-6">Citizen Safety Tracker</h1>
-        
-        <div id="installContainer" class="hidden mb-6">
-            <button id="installBtn" class="w-full bg-green-600 py-3 rounded-lg font-bold">Install App to Home Screen</button>
-        </div>
+<div id="installContainer" class="hidden w-full max-w-sm mb-4">
+    <button id="installBtn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold text-sm">➕ অ্যাপটি ইন্সটল করুন</button>
+</div>
 
-        <div class="bg-[#1a1a1a] p-6 rounded-2xl shadow-xl">
-            <form id="reportForm" class="flex flex-col gap-4">
-                <select id="category" class="w-full bg-[#2a2a2a] p-4 rounded-lg text-white border border-gray-700 focus:outline-none">
-                    <option value="Drug Activity">Drug Activity</option>
-                    <option value="Theft">Theft/Robbery</option>
-                    <option value="Public Harassment">Public Harassment</option>
-                    <option value="Traffic Violation">Traffic Violation</option>
-                    <option value="Environmental Issue">Environmental Issue</option>
-                    <option value="Suspicious Activity">Suspicious Activity</option>
-                    <option value="Other">Other</option>
-                </select>
-                <button type="submit" class="w-full bg-blue-600 py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition">Submit Report</button>
-            </form>
-        </div>
+<div class="w-full max-w-sm bg-slate-900 p-6 rounded-2xl border border-slate-700 shadow-2xl">
+    <div class="text-center mb-6">
+        <div class="text-4xl mb-2">🚨</div>
+        <h1 class="text-xl font-bold text-red-500">মাদকবিরোধী নাগরিক পোর্টাল</h1>
     </div>
+    <form id="reportForm" class="space-y-4">
+        <select id="category" class="w-full bg-slate-800 p-3 rounded-lg border border-slate-700 text-white">
+            <option>মাদক কেনাবেচা / খুচরা বিক্রয়</option>
+            <option>চুরি / ছিনতাই</option>
+            <option>ইভটিজিং / জনরোষ</option>
+            <option>অন্যান্য</option>
+        </select>
+        <input type="text" id="location" placeholder="সুনির্দিষ্ট এলাকা" class="w-full bg-slate-800 p-3 rounded-lg border border-slate-700 text-white">
+        <textarea id="details" rows="2" placeholder="বিস্তারিত বিবরণ..." class="w-full bg-slate-800 p-3 rounded-lg border border-slate-700 text-white"></textarea>
+        <input type="file" id="fileUpload" class="w-full bg-slate-800 p-2 rounded border border-slate-700 text-slate-400">
+        <button type="submit" id="submitBtn" class="w-full bg-red-600 text-white py-3 rounded-lg font-bold">নিরাপদে রিপোর্ট সাবমিট করুন</button>
+    </form>
+</div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+
+    // এখানে তোমার Firebase কনফিগ বসানো হয়েছে
+    const firebaseConfig = {
+        apiKey: "AIzaSyAGeR82VjAse0w3P-Bdd0uzrTGrq02ffXc",
+        authDomain: "citizen-safety-tracker.firebaseapp.com",
+        projectId: "citizen-safety-tracker",
+        storageBucket: "citizen-safety-tracker.firebasestorage.app",
+        messagingSenderId: "871704315412",
+        appId: "1:871704315412:web:b30edabcfc719abff1c901",
+        measurementId: "G-VB23WZ3WQV"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const analytics = getAnalytics(app);
+
+    // Install Prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPrompt = e;
+        document.getElementById('installContainer').classList.remove('hidden');
+    });
+
+    // Submit Logic
+    document.getElementById('reportForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "প্রসেসিং...";
         
-        const firebaseConfig = {
-            apiKey: "AIzaSyAGeR82VjAse0w3P-Bdd0uzrTGrq02ffXc",
-            authDomain: "citizen-safety-tracker.firebaseapp.com",
-            projectId: "citizen-safety-tracker",
-            storageBucket: "citizen-safety-tracker.firebasestorage.app",
-            messagingSenderId: "871704315412",
-            appId: "1:871704315412:web:b30edabcfc719abff1c901"
-        };
-        initializeApp(firebaseConfig);
+        let fileUrl = "ছবি নেই";
+        const file = document.getElementById('fileUpload').files[0];
+        
+        if(file) {
+            const storageRef = ref(storage, 'reports/' + Date.now() + '.jpg');
+            await uploadBytes(storageRef, file);
+            fileUrl = await getDownloadURL(storageRef);
+        }
 
-        const BOT_TOKEN = "8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg";
-        const CHAT_ID = "8766925591";
+        logEvent(analytics, 'report_submitted');
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            document.getElementById('installContainer').classList.remove('hidden');
-            window.deferredPrompt = e;
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const text = `🚨 *নতুন রিপোর্ট*\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}\n*ছবি:* ${fileUrl}\n*লোকেশন:* ${pos.coords.latitude}, ${pos.coords.longitude}`;
+            await fetch(`https://api.telegram.org/bot8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg/sendMessage?chat_id=8766925591&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
+            alert("রিপোর্ট সফলভাবে জমা হয়েছে!");
+            btn.innerText = "নিরাপদে রিপোর্ট সাবমিট করুন";
         });
-
-        document.getElementById('installBtn').addEventListener('click', () => {
-            if (window.deferredPrompt) {
-                window.deferredPrompt.prompt();
-                document.getElementById('installContainer').classList.add('hidden');
-            }
-        });
-
-        document.getElementById('reportForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const cat = document.getElementById('category').value;
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const text = `🚨 *Report: ${cat}*%0A📍 *Location:* ${pos.coords.latitude}, ${pos.coords.longitude}%0A🔗 *Map:* https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}&parse_mode=Markdown`);
-                alert("Report Sent Successfully!");
-            }, () => alert("Location permission is mandatory."));
-        });
-    </script>
+    });
+</script>
 </body>
 </html>
