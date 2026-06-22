@@ -3,85 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>সুরক্ষিত নাগরিক রিপোর্টিং পোর্টাল</title>
+    <title>Citizen Safety Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href='data:application/json,{"name":"Citizen Safety Tracker","short_name":"SafetyTracker","start_url":"./","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2991/2991148.png","sizes":"192x192","type":"image/png"}]}'>
 </head>
-<body class="bg-slate-950 min-h-screen flex flex-col items-center py-6 px-4">
+<body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-4">
 
-<div id="installContainer" class="hidden w-full max-w-sm mb-4">
-    <button id="installBtn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold text-sm">➕ অ্যাপটি ইন্সটল করুন</button>
-</div>
-
-<div class="w-full max-w-sm bg-slate-900 p-6 rounded-2xl border border-slate-700 shadow-2xl">
-    <div class="text-center mb-6">
-        <div class="text-4xl mb-2">🚨</div>
-        <h1 class="text-xl font-bold text-red-500">মাদকবিরোধী নাগরিক পোর্টাল</h1>
-    </div>
+<div class="w-full max-w-md bg-slate-900 border border-slate-700 p-8 rounded-3xl shadow-2xl">
+    <h1 class="text-2xl font-bold text-center text-red-500 mb-6">🚨 নিরাপত্তা পোর্টাল</h1>
+    
     <form id="reportForm" class="space-y-4">
-        <select id="category" class="w-full bg-slate-800 p-3 rounded-lg border border-slate-700 text-white">
-            <option>মাদক কেনাবেচা / খুচরা বিক্রয়</option>
+        <select id="category" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700">
+            <option>মাদক কেনাবেচা</option>
             <option>চুরি / ছিনতাই</option>
-            <option>ইভটিজিং / জনরোষ</option>
-            <option>অন্যান্য</option>
+            <option>ইভটিজিং</option>
+            <option>সন্দেহভাজন কার্যক্রম</option>
         </select>
-        <input type="text" id="location" placeholder="সুনির্দিষ্ট এলাকা" class="w-full bg-slate-800 p-3 rounded-lg border border-slate-700 text-white">
-        <textarea id="details" rows="2" placeholder="বিস্তারিত বিবরণ..." class="w-full bg-slate-800 p-3 rounded-lg border border-slate-700 text-white"></textarea>
-        <input type="file" id="fileUpload" class="w-full bg-slate-800 p-2 rounded border border-slate-700 text-slate-400">
-        <button type="submit" id="submitBtn" class="w-full bg-red-600 text-white py-3 rounded-lg font-bold">নিরাপদে রিপোর্ট সাবমিট করুন</button>
+        
+        <input type="text" id="location" placeholder="এলাকার নাম" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <textarea id="details" placeholder="বিস্তারিত বিবরণ (ঐচ্ছিক)" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700"></textarea>
+        
+        <input type="file" id="fileUpload" class="w-full p-2 bg-slate-800 rounded-xl border border-slate-700">
+        
+        <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 py-4 rounded-xl font-bold transition">রিপোর্ট পাঠান</button>
     </form>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
-    // এখানে তোমার Firebase কনফিগ বসানো হয়েছে
     const firebaseConfig = {
         apiKey: "AIzaSyAGeR82VjAse0w3P-Bdd0uzrTGrq02ffXc",
         authDomain: "citizen-safety-tracker.firebaseapp.com",
         projectId: "citizen-safety-tracker",
         storageBucket: "citizen-safety-tracker.firebasestorage.app",
         messagingSenderId: "871704315412",
-        appId: "1:871704315412:web:b30edabcfc719abff1c901",
-        measurementId: "G-VB23WZ3WQV"
+        appId: "1:871704315412:web:b30edabcfc719abff1c901"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const storage = getStorage(app);
-    const analytics = getAnalytics(app);
+    initializeApp(firebaseConfig);
+    const storage = getStorage();
 
-    // Install Prompt
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        window.deferredPrompt = e;
-        document.getElementById('installContainer').classList.remove('hidden');
-    });
-
-    // Submit Logic
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
-        btn.innerText = "প্রসেসিং...";
-        
-        let fileUrl = "ছবি নেই";
+        btn.innerText = "পাঠানো হচ্ছে...";
+        btn.disabled = true;
+
+        let fileUrl = "ছবি সংযুক্ত করা হয়নি";
         const file = document.getElementById('fileUpload').files[0];
-        
-        if(file) {
-            const storageRef = ref(storage, 'reports/' + Date.now() + '.jpg');
-            await uploadBytes(storageRef, file);
-            fileUrl = await getDownloadURL(storageRef);
+
+        try {
+            if(file) {
+                const storageRef = ref(storage, 'reports/' + Date.now() + '.jpg');
+                const snapshot = await uploadBytes(storageRef, file);
+                fileUrl = await getDownloadURL(snapshot.ref);
+            }
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const text = `🚨 *নতুন রিপোর্ট*\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}\n*বিবরণ:* ${document.getElementById('details').value}\n*ছবি:* ${fileUrl}\n*লোকেশন:* ${pos.coords.latitude}, ${pos.coords.longitude}`;
+                
+                await fetch(`https://api.telegram.org/bot8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg/sendMessage?chat_id=8766925591&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
+                
+                alert("আপনার রিপোর্টটি সফলভাবে পাঠানো হয়েছে!");
+                location.reload();
+            }, () => {
+                alert("দয়া করে লোকেশন পারমিশন অন করুন।");
+                btn.disabled = false;
+                btn.innerText = "রিপোর্ট পাঠান";
+            });
+        } catch (error) {
+            alert("সিস্টেম এরর, আবার চেষ্টা করুন।");
+            btn.disabled = false;
+            btn.innerText = "রিপোর্ট পাঠান";
         }
-
-        logEvent(analytics, 'report_submitted');
-
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-            const text = `🚨 *নতুন রিপোর্ট*\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}\n*ছবি:* ${fileUrl}\n*লোকেশন:* ${pos.coords.latitude}, ${pos.coords.longitude}`;
-            await fetch(`https://api.telegram.org/bot8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg/sendMessage?chat_id=8766925591&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
-            alert("রিপোর্ট সফলভাবে জমা হয়েছে!");
-            btn.innerText = "নিরাপদে রিপোর্ট সাবমিট করুন";
-        });
     });
 </script>
 </body>
