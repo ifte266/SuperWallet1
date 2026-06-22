@@ -1,4 +1,46 @@
-    // রিপোর্ট সাবমিট লজিক (আপডেটেড ম্যাপ লিংকসহ)
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>নিরাপত্তা পোর্টাল</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href='data:application/json,{"name":"নিরাপত্তা পোর্টাল","short_name":"SafetyApp","start_url":"./","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2991/2991148.png","sizes":"192x192","type":"image/png"}]}'>
+    <style>body { background-color: #0f172a; color: white; }</style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4">
+
+<div id="installContainer" class="hidden w-full max-w-sm mb-4">
+    <button id="installBtn" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg transition">➕ অ্যাপটি হোম স্ক্রিনে যোগ করুন</button>
+</div>
+
+<div class="w-full max-w-sm bg-slate-900 p-6 rounded-3xl border border-slate-700 shadow-2xl">
+    <h1 class="text-xl font-bold text-center text-red-500 mb-6">🚨 নিরাপত্তা পোর্টাল</h1>
+    <form id="reportForm" class="space-y-4">
+        <select id="category" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
+            <option>চুরি / ছিনতাই</option>
+            <option>মাদক কেনাবেচা</option>
+            <option>ইভটিজিং</option>
+            <option>সন্দেহভাজন কার্যক্রম</option>
+        </select>
+        <input type="text" id="location" placeholder="এলাকার নাম" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
+        <input type="file" id="fileInput" accept="image/*" class="w-full text-slate-400 text-sm">
+        <button type="submit" id="submitBtn" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">রিপোর্ট পাঠান</button>
+    </form>
+</div>
+
+<script>
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('installContainer').classList.remove('hidden');
+    });
+
+    document.getElementById('installBtn').addEventListener('click', () => {
+        if (deferredPrompt) deferredPrompt.prompt();
+    });
+
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -8,8 +50,6 @@
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            
-            // HTTPS ম্যাপ লিংক ফরম্যাট
             const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
             const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}\n🔗 [ম্যাপে দেখুন](${mapLink})`;
 
@@ -23,7 +63,7 @@
                 if (fileInput.files.length > 0) {
                     formData.append('photo', fileInput.files[0]);
                     formData.append('caption', text);
-                    formData.append('parse_mode', 'Markdown'); // Markdown চালু করা হয়েছে
+                    formData.append('parse_mode', 'Markdown');
                     await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: formData });
                 } else {
                     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=8766925591&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
@@ -41,3 +81,6 @@
             btn.disabled = false;
         });
     });
+</script>
+</body>
+</html>
