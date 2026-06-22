@@ -1,0 +1,16 @@
+{
+  "name": "AntiDrug Tracker",
+  "short_name": "AntiDrug",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5087/5087579.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
