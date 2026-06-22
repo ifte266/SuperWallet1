@@ -10,7 +10,7 @@
 </head>
 <body class="min-h-screen flex flex-col items-center py-6 px-4">
 
-<!-- ইন্সটল বাটন (এটি শুরুতে থাকবে, ব্রাউজার সাপোর্ট করলে দেখাবে) -->
+<!-- ইন্সটল বাটন -->
 <div id="installContainer" class="hidden w-full max-w-sm mb-4">
     <button id="installBtn" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg transition">➕ অ্যাপটি হোম স্ক্রিনে যোগ করুন</button>
 </div>
@@ -26,16 +26,17 @@
             <option>সন্দেহভাজন কার্যক্রম</option>
         </select>
         <input type="text" id="location" placeholder="এলাকার নাম" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
+        <!-- নতুন বিস্তারিত ফিল্ড -->
+        <textarea id="description" placeholder="বিস্তারিত লিখুন (ঐচ্ছিক)" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white h-24"></textarea>
         <input type="file" id="fileInput" accept="image/*" class="w-full text-slate-400 text-sm">
         <button type="submit" id="submitBtn" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">রিপোর্ট পাঠান</button>
     </form>
 </div>
 
-<!-- অ্যাপ পরিচিতি সেকশন (নিরাপত্তা ও বিশ্বাসযোগ্যতার জন্য) -->
+<!-- অ্যাপ পরিচিতি -->
 <div class="w-full max-w-sm mt-8 p-6 bg-slate-800 rounded-3xl border border-slate-700 text-slate-300 text-sm shadow-xl">
     <h2 class="text-white font-bold mb-2">এই অ্যাপটি কী?</h2>
     <p class="mb-4">এটি একটি পাবলিক নিরাপত্তা পোর্টাল। আপনার এলাকার যেকোনো অনাকাঙ্ক্ষিত ঘটনা বা অপরাধমূলক কর্মকাণ্ডের তথ্য সরাসরি কর্তৃপক্ষের কাছে পৌঁছে দেওয়ার জন্য এটি তৈরি করা হয়েছে।</p>
-    
     <h2 class="text-white font-bold mb-2">আপনার নিরাপত্তা:</h2>
     <ul class="list-disc ml-4 space-y-1">
         <li>আপনার পাঠানো তথ্য গোপন রাখা হয়।</li>
@@ -46,7 +47,6 @@
 </div>
 
 <script>
-    // PWA ইন্সটলেশন লজিক
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -58,7 +58,6 @@
         if (deferredPrompt) deferredPrompt.prompt();
     });
 
-    // রিপোর্ট সাবমিট লজিক
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -69,7 +68,12 @@
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
             const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-            const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}\n🔗 [ম্যাপে দেখুন](${mapLink})`;
+            
+            // বিস্তারিত লজিক
+            const desc = document.getElementById('description').value;
+            const descText = desc ? `\n*বর্ণনা:* ${desc}\n` : "";
+            
+            const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}${descText}\n🔗 [ম্যাপে দেখুন](${mapLink})`;
 
             const formData = new FormData();
             formData.append('chat_id', '8766925591');
