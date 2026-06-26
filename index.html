@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>নিরাপত্তা পোর্টাল</title>
+    <title>নিরাপত্তা পোর্টাল | Smart Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { background-color: #0f172a; color: white; }</style>
+    <style>
+        body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; min-height: 100vh; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
+    </style>
 </head>
-<body class="min-h-screen flex flex-col items-center py-6 px-4">
+<body class="flex flex-col items-center py-6 px-4">
 
-<!-- মূল ফর্ম -->
-<div class="w-full max-w-sm bg-slate-900 p-6 rounded-3xl border border-slate-700 shadow-2xl">
-    <h1 class="text-xl font-bold text-center text-red-500 mb-6">🚨 নিরাপত্তা পোর্টাল</h1>
+<div class="w-full max-w-sm glass p-6 rounded-3xl shadow-2xl">
+    <h1 class="text-2xl font-bold text-center text-red-500 mb-6">🚨 নিরাপত্তা পোর্টাল</h1>
+    
     <form id="reportForm" class="space-y-4">
         <select id="category" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
             <option>চুরি / ছিনতাই</option>
@@ -19,71 +22,83 @@
             <option>ইভটিজিং</option>
             <option>সন্দেহভাজন কার্যক্রম</option>
         </select>
-        <input type="text" id="location" placeholder="এলাকার নাম" required class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
-        <textarea id="description" placeholder="বিস্তারিত লিখুন (ঐচ্ছিক)" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white h-24"></textarea>
-        <input type="file" id="fileInput" accept="image/*" class="w-full text-slate-400 text-sm">
         
-        <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-all">রিপোর্ট পাঠান</button>
+        <label class="flex items-center space-x-2 text-sm text-red-400">
+            <input type="checkbox" id="urgent" class="w-4 h-4 accent-red-600">
+            <span>জরুরি অবস্থা (Emergency)</span>
+        </label>
+
+        <input type="text" id="location" placeholder="এলাকার নাম (অটো আসবে)" required class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
+        
+        <button type="button" id="voiceBtn" class="w-full bg-slate-700 hover:bg-slate-600 py-2 rounded-xl text-sm transition">🎙️ ভয়েস দিয়ে বিস্তারিত বলুন</button>
+        <textarea id="description" placeholder="বিস্তারিত লিখুন..." class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white h-20"></textarea>
+        
+        <input type="file" id="fileInput" accept="image/*" class="w-full text-slate-400 text-xs">
+        
+        <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold text-white shadow-lg transition-all">রিপোর্ট পাঠান</button>
     </form>
 </div>
 
-<!-- অ্যাপ পরিচিতি -->
-<div class="w-full max-w-sm mt-8 p-6 bg-slate-800 rounded-3xl border border-slate-700 text-slate-300 text-sm shadow-xl">
-    <p class="text-xs italic text-center">⚠️ রিপোর্ট করার সময় লোকেশন পারমিশন চাইলে 'Allow' করুন। এটি আপনার গোপনীয়তা রক্ষা করে শুধুমাত্র ঘটনার সত্যতা যাচাইয়ের জন্য ব্যবহৃত হয়।</p>
-</div>
-
 <script>
+    // ভয়েস টু টেক্সট লজিক
+    const voiceBtn = document.getElementById('voiceBtn');
+    const desc = document.getElementById('description');
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'bn-BD';
+
+    voiceBtn.onclick = () => {
+        voiceBtn.innerText = "রেকর্ডিং হচ্ছে...";
+        recognition.start();
+    };
+
+    recognition.onresult = (event) => {
+        desc.value = event.results[0][0].transcript;
+        voiceBtn.innerText = "🎙️ ভয়েস দিয়ে বিস্তারিত বলুন";
+    };
+
+    // মূল সাবমিট লজিক
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        // ১. আগে একটি কনফার্মেশন মেসেজ
-        const userAgreed = confirm("রিপোর্টটি সঠিক কর্তৃপক্ষের কাছে পাঠানোর জন্য আপনার বর্তমান লোকেশন প্রয়োজন। আপনি কি অনুমতি দিচ্ছেন?");
-        if (!userAgreed) return;
-
         const btn = document.getElementById('submitBtn');
-        btn.innerText = "লোকেশন নেয়া হচ্ছে...";
         btn.disabled = true;
+        btn.innerText = "লোকেশন নেয়া হচ্ছে...";
 
-        // ২. লোকেশন পারমিশন রিকোয়েস্ট
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            btn.innerText = "পাঠানো হচ্ছে...";
-            
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-            const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-            
-            const desc = document.getElementById('description').value;
-            const descText = desc ? `\n*বর্ণনা:* ${desc}\n` : "";
-            const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}${descText}\n🔗 [ম্যাপে দেখুন](${mapLink})`;
 
+            // ঠিকানা অটো-ফিল (Nominatim)
+            let address = "এলাকা অটোমেটিক পাওয়া যায়নি";
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=bn`);
+                const data = await res.json();
+                if(data.address) address = `${data.address.suburb || ''}, ${data.address.city || ''}`;
+            } catch(e) {}
+
+            document.getElementById('location').value = address;
+            btn.innerText = "পাঠানো হচ্ছে...";
+
+            // টেলিগ্রাম বোট সেন্ড লজিক
             const formData = new FormData();
             formData.append('chat_id', '8766925591');
-            
-            const fileInput = document.getElementById('fileInput');
+            const file = document.getElementById('fileInput').files[0];
             const botToken = "8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg";
+            const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${address}\n*বর্ণনা:* ${desc.value}`;
 
-            try {
-                if (fileInput.files.length > 0) {
-                    formData.append('photo', fileInput.files[0]);
-                    formData.append('caption', text);
-                    formData.append('parse_mode', 'Markdown');
-                    await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: 'POST', body: formData });
-                } else {
-                    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=8766925591&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
-                }
-                alert("আপনার রিপোর্টটি সফলভাবে পাঠানো হয়েছে। ধন্যবাদ!");
-                location.reload();
-            } catch (err) {
-                alert("সার্ভার সমস্যা, আবার চেষ্টা করুন।");
-                btn.innerText = "রিপোর্ট পাঠান";
-                btn.disabled = false;
+            if(file) {
+                formData.append('photo', file);
+                formData.append('caption', text);
+                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {method: 'POST', body: formData});
+            } else {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=8766925591&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
             }
-        }, (error) => {
-            // ৩. কেউ ডিনাই করলে গাইডলাইন দেওয়া
-            alert("লোকেশন পারমিশন না দিলে আমরা রিপোর্টটি গ্রহণ করতে পারছি না। দয়া করে ব্রাউজার সেটিংস থেকে লোকেশন পারমিশন অন করুন।");
-            btn.innerText = "রিপোর্ট পাঠান";
+            alert("সফলভাবে পাঠানো হয়েছে!");
+            location.reload();
+        }, () => {
+            alert("লোকেশন পারমিশন অন করুন!");
             btn.disabled = false;
-        }, { enableHighAccuracy: true });
+            btn.innerText = "রিপোর্ট পাঠান";
+        }, {enableHighAccuracy: true});
     });
 </script>
 </body>
