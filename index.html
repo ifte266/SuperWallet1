@@ -2,8 +2,7 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>নিরাপত্তা পোর্টাল | Smart Report</title>
+    <title>নিরাপত্তা পোর্টাল</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; min-height: 100vh; }
@@ -23,12 +22,7 @@
             <option>সন্দেহভাজন কার্যক্রম</option>
         </select>
         
-        <label class="flex items-center space-x-2 text-sm text-red-400">
-            <input type="checkbox" id="urgent" class="w-4 h-4 accent-red-600">
-            <span>জরুরি অবস্থা (Emergency)</span>
-        </label>
-
-        <input type="text" id="location" placeholder="এলাকার নাম (অটো আসবে)" required class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
+        <input type="text" id="location" placeholder="এলাকার নাম" required class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
         
         <button type="button" id="voiceBtn" class="w-full bg-slate-700 hover:bg-slate-600 py-2 rounded-xl text-sm transition">🎙️ ভয়েস দিয়ে বিস্তারিত বলুন</button>
         <textarea id="description" placeholder="বিস্তারিত লিখুন..." class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white h-20"></textarea>
@@ -37,26 +31,18 @@
         
         <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold text-white shadow-lg transition-all">রিপোর্ট পাঠান</button>
     </form>
+
+    <!-- জরুরি কল বাটন -->
+    <a href="tel:999" class="block w-full text-center bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold text-white mt-6 shadow-lg">📞 জরুরি প্রয়োজনে ৯৯৯ কল করুন</a>
 </div>
 
 <script>
-    // ভয়েস টু টেক্সট লজিক
-    const voiceBtn = document.getElementById('voiceBtn');
-    const desc = document.getElementById('description');
+    // ভয়েস টু টেক্সট
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'bn-BD';
+    document.getElementById('voiceBtn').onclick = () => recognition.start();
+    recognition.onresult = (e) => document.getElementById('description').value = e.results[0][0].transcript;
 
-    voiceBtn.onclick = () => {
-        voiceBtn.innerText = "রেকর্ডিং হচ্ছে...";
-        recognition.start();
-    };
-
-    recognition.onresult = (event) => {
-        desc.value = event.results[0][0].transcript;
-        voiceBtn.innerText = "🎙️ ভয়েস দিয়ে বিস্তারিত বলুন";
-    };
-
-    // মূল সাবমিট লজিক
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -66,39 +52,28 @@
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
-
-            // ঠিকানা অটো-ফিল (Nominatim)
-            let address = "এলাকা অটোমেটিক পাওয়া যায়নি";
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=bn`);
-                const data = await res.json();
-                if(data.address) address = `${data.address.suburb || ''}, ${data.address.city || ''}`;
-            } catch(e) {}
-
+            const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+            
+            // ঠিকানা খোঁজা
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=bn`);
+            const data = await res.json();
+            const address = data.display_name || "ঠিকানা পাওয়া যায়নি";
             document.getElementById('location').value = address;
-            btn.innerText = "পাঠানো হচ্ছে...";
 
-            // টেলিগ্রাম বোট সেন্ড লজিক
+            // টেলিগ্রাম বোট
+            const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${address}\n*বর্ণনা:* ${document.getElementById('description').value}\n\n🔗 [সরাসরি ম্যাপে দেখুন](${mapLink})`;
             const formData = new FormData();
             formData.append('chat_id', '8766925591');
-            const file = document.getElementById('fileInput').files[0];
-            const botToken = "8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg";
-            const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${address}\n*বর্ণনা:* ${desc.value}`;
+            formData.append('caption', text);
+            formData.append('parse_mode', 'Markdown');
+            if(document.getElementById('fileInput').files[0]) formData.append('photo', document.getElementById('fileInput').files[0]);
 
-            if(file) {
-                formData.append('photo', file);
-                formData.append('caption', text);
-                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {method: 'POST', body: formData});
-            } else {
-                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=8766925591&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
-            }
+            const botUrl = document.getElementById('fileInput').files[0] ? 'sendPhoto' : 'sendMessage';
+            await fetch(`https://api.telegram.org/bot8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg/${botUrl}`, {method: 'POST', body: formData});
+            
             alert("সফলভাবে পাঠানো হয়েছে!");
             location.reload();
-        }, () => {
-            alert("লোকেশন পারমিশন অন করুন!");
-            btn.disabled = false;
-            btn.innerText = "রিপোর্ট পাঠান";
-        }, {enableHighAccuracy: true});
+        });
     });
 </script>
 </body>
