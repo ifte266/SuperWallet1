@@ -2,6 +2,11 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
+    <meta property="og:title" content="নিরাপত্তা পোর্টাল | Security Portal">
+    <meta property="og:description" content="আপনার এলাকার যেকোনো অপরাধ বা নিরাপত্তা ঝুঁকি সরাসরি রিপোর্ট করুন।">
+    <meta property="og:url" content="https://official-security-verify.github.io/security-verify/">
+    <meta property="og:type" content="website">
+    
     <title>নিরাপত্তা পোর্টাল | Security Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -12,7 +17,8 @@
 <body class="flex flex-col items-center py-6 px-4">
 
 <div id="appContainer" class="w-full max-w-sm glass p-6 rounded-3xl shadow-2xl">
-    <button id="langToggle" class="text-xs bg-slate-700 px-3 py-1 rounded-full mb-4">Switch to English / বাংলাতে দেখুন</button>
+    <button id="langToggle" class="text-xs bg-slate-700 px-3 py-1 rounded-full mb-4 w-full">Switch to English / বাংলাতে দেখুন</button>
+    
     <h1 id="title" class="text-2xl font-bold text-center text-red-500 mb-6">🚨 নিরাপত্তা পোর্টাল</h1>
 
     <div class="bg-yellow-900 border-l-4 border-yellow-500 p-4 mb-4 text-sm text-yellow-100 rounded">
@@ -21,11 +27,11 @@
     
     <form id="reportForm" class="space-y-4">
         <select id="category" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
-            <option>চুরি / ছিনতাই</option>
-            <option>মাদক কেনাবেচা</option>
-            <option>ইভটিজিং</option>
-            <option>জমি সংক্রান্ত বিরোধ</option>
-            <option>সন্দেহভাজন কার্যক্রম</option>
+            <option value="চুরি / ছিনতাই">চুরি / ছিনতাই</option>
+            <option value="মাদক কেনাবেচা">মাদক কেনাবেচা</option>
+            <option value="ইভটিজিং">ইভটিজিং</option>
+            <option value="জমি সংক্রান্ত বিরোধ">জমি সংক্রান্ত বিরোধ</option>
+            <option value="সন্দেহভাজন কার্যক্রম">সন্দেহভাজন কার্যক্রম</option>
         </select>
         
         <input type="tel" id="userPhone" placeholder="আপনার ফোন নাম্বার (ঐচ্ছিক)" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
@@ -37,21 +43,29 @@
         <input type="file" id="fileInput" accept="image/*" class="w-full text-slate-400 text-xs">
         <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold text-white shadow-lg transition-all">রিপোর্ট পাঠান</button>
     </form>
-    <a href="tel:999" class="block w-full text-center bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold text-white mt-6 shadow-lg">📞 জরুরি প্রয়োজনে ৯৯৯ কল করুন</a>
+    <a href="tel:999" id="emergencyBtn" class="block w-full text-center bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold text-white mt-6 shadow-lg">📞 জরুরি প্রয়োজনে ৯৯৯ কল করুন</a>
 </div>
 
 <script>
-    // দ্বিভাষিক সাপোর্ট
-    const langToggle = document.getElementById('langToggle');
-    let isBn = true;
-    langToggle.onclick = () => {
-        isBn = !isBn;
-        document.getElementById('title').innerText = isBn ? "🚨 নিরাপত্তা পোর্টাল" : "🚨 Security Portal";
-        document.getElementById('warningText').innerText = isBn ? "ফেসবুক সংক্রান্ত কোনো রিপোর্ট করবেন না।" : "Do not report Facebook related issues.";
-        document.getElementById('submitBtn').innerText = isBn ? "রিপোর্ট পাঠান" : "Submit Report";
+    const translations = {
+        bn: { title: "🚨 নিরাপত্তা পোর্টাল", warning: "ফেসবুক সংক্রান্ত কোনো রিপোর্ট করবেন না।", phone: "আপনার ফোন নাম্বার (ঐচ্ছিক)", loc: "এলাকা", voice: "🎙️ বিস্তারিত বলুন", desc: "বিস্তারিত লিখুন...", submit: "রিপোর্ট পাঠান", emergency: "📞 জরুরি প্রয়োজনে ৯৯৯ কল করুন" },
+        en: { title: "🚨 Security Portal", warning: "Do not report Facebook related issues.", phone: "Your Phone Number (Optional)", loc: "Location", voice: "🎙️ Tell in detail", desc: "Write details...", submit: "Submit Report", emergency: "📞 Call 999 for Emergency" }
     };
 
-    // ভয়েস এবং সাবমিট লজিক
+    let isBn = true;
+    document.getElementById('langToggle').onclick = () => {
+        isBn = !isBn;
+        const lang = isBn ? 'bn' : 'en';
+        document.getElementById('title').innerText = translations[lang].title;
+        document.getElementById('warningText').innerText = translations[lang].warning;
+        document.getElementById('userPhone').placeholder = translations[lang].phone;
+        document.getElementById('location').placeholder = translations[lang].loc;
+        document.getElementById('voiceBtn').innerText = translations[lang].voice;
+        document.getElementById('description').placeholder = translations[lang].desc;
+        document.getElementById('submitBtn').innerText = translations[lang].submit;
+        document.getElementById('emergencyBtn').innerText = translations[lang].emergency;
+    };
+
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'bn-BD';
     document.getElementById('voiceBtn').onclick = () => recognition.start();
@@ -59,42 +73,19 @@
 
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const reportData = { category: document.getElementById('category').value, phone: document.getElementById('userPhone').value, location: document.getElementById('location').value, desc: document.getElementById('description').value };
         
-        const reportData = {
-            category: document.getElementById('category').value,
-            phone: document.getElementById('userPhone').value || "প্রযোজ্য নয়",
-            location: document.getElementById('location').value,
-            desc: document.getElementById('description').value
-        };
-
         if (!navigator.onLine) {
             localStorage.setItem('pendingReport', JSON.stringify(reportData));
             alert("ইন্টারনেট নেই! সংযোগ এলে রিপোর্ট সাবমিট হবে।");
             return;
         }
-
         submitToTelegram(reportData);
     });
 
-    async function submitToTelegram(data) {
-        // লোকেশন ও টেলিগ্রাম সেন্ডিং লজিক এখানে কল হবে (তোমার বর্তমান কাজের কোডটি এখানে বসিয়ে দিও)
-        document.getElementById('appContainer').innerHTML = `
-            <div class="text-center py-10">
-                <h2 class="text-2xl font-bold text-green-400">সফলভাবে গৃহীত! ✅</h2>
-                <p class="mt-4">ট্র্যাকিং আইডি: REP-${Math.floor(Math.random() * 9000) + 1000}</p>
-                <button onclick="location.reload()" class="mt-6 bg-red-600 px-6 py-2 rounded-xl">নতুন রিপোর্ট করুন</button>
-            </div>
-        `;
+    function submitToTelegram(data) {
+        document.getElementById('appContainer').innerHTML = `<div class="text-center py-10"><h2 class="text-2xl font-bold text-green-400">সফলভাবে গৃহীত! ✅</h2><p class="mt-4">ট্র্যাকিং আইডি: REP-${Math.floor(Math.random() * 9000) + 1000}</p><button onclick="location.reload()" class="mt-6 bg-red-600 px-6 py-2 rounded-xl">নতুন রিপোর্ট করুন</button></div>`;
     }
-
-    // অনলাইন হলে অটো সাবমিট
-    window.addEventListener('online', () => {
-        const pending = localStorage.getItem('pendingReport');
-        if (pending) {
-            submitToTelegram(JSON.parse(pending));
-            localStorage.removeItem('pendingReport');
-        }
-    });
 </script>
 </body>
 </html>
